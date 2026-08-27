@@ -53,6 +53,66 @@ autopilot: build a REST API for managing tasks
 
 深度访谈使用苏格拉底式提问在编写任何代码之前帮你理清思路。它揭示隐藏假设并通过加权维度衡量清晰度，确保你在执行前明确知道要构建什么。
 
+## CodeBuddy 支持
+
+OMC 同样原生运行在 CodeBuddy CLI 中 — 同一插件加载全部技能、命令、智能体、钩子和 MCP 服务器，并带有 CodeBuddy 专用的状态隔离。
+
+### 安装
+
+在 shell 中执行，`<repo-url>` 指向 OMC 仓库的远程 git URL：
+
+```bash
+codebuddy plugin marketplace add <repo-url>
+codebuddy plugin install oh-my-claudecode@omc
+```
+
+远程 git 型市场安装后，插件会物化到本地插件缓存并经该缓存投影加载。本地 directory 路径安装仅用于开发 — directory 安装的插件在 headless（`-p`）会话中不会加载。开发调试请直接加载本地 checkout：
+
+```bash
+codebuddy --plugin-dir <repo> -p "your prompt"
+```
+
+> `--plugin-dir` 是可变参数选项，prompt 必须放在它之后。
+
+### 初始化
+
+```bash
+omc setup --client codebuddy
+```
+
+CodeBuddy 会话会通过 `CODEBUDDY_*` 插件环境信号被自动探测，在 CodeBuddy 会话内运行 setup 时可省略该参数；`--client claude` 可强制 claude 目标。setup 只写入 CodeBuddy 侧：
+
+- `~/.codebuddy/CODEBUDDY.md` — 记忆文件，经 `OMC:START` 标记合并
+- `~/.codebuddy/settings.json` 中的 statusLine / HUD 配置
+- 受管 MCP server 时写入 `~/.codebuddy/.mcp.json`
+- 用户级 hook 通道
+
+环境变量：`OMC_CLIENT=claude|codebuddy` 显式覆盖客户端检测；`OMC_PRELOAD_DISABLED=1` 禁用 CLI preload 的配置路径重定向（主要用于测试）。
+
+### 组件与模型语义
+
+全部组件以 `oh-my-claudecode:` 命名空间加载 — 31 个 skills、21 个 commands、19 个 agents、26 个 hooks、MCP server `t`；斜杠命令 `/oh-my-claudecode:<cmd>` 与裸名两种形式都可用。agents frontmatter 零改动：CodeBuddy 对 `opus`/`sonnet`/`haiku` 别名原生回退主会话模型，等价于 `model: inherit`。想恢复分档模型路由，可用 CodeBuddy settings 的 `subagents.agents.<name>.model`，或 OMC 既有的 `agents.<name>.model` / `OMC_SUBAGENT_MODEL` 覆盖。
+
+### 状态隔离
+
+CodeBuddy 会话的用户级状态落在 `~/.codebuddy`、项目级状态落在 `.codebuddy/`，与 Claude 会话完全隔离，绝不写 `~/.claude`。写入 `~/.codex` 是上游既有的统一 registry 行为，保持不变。
+
+### 已知限制
+
+- headless（`-p`）下插件级 `UserPromptSubmit` hook 与插件注册存在竞态、不会触发，该通道上的关键词检测失效；`omc setup --client codebuddy` 安装的用户级 hook 通道在 `-p` 会话可用。
+- 插件 `PreToolUse` 的 `deny` 在 `-p` 模式被解析但不强制执行，且 hook 改写输入字段 `updatedInput` 与 CodeBuddy 的 `modifiedInput` 不匹配。
+- MCP 工具经 CodeBuddy 的 `ToolSearch` / `DeferExecuteTool` 懒加载间接调用，不直接出现在工具列表中。
+- TUI 交互模式及该模式下的 `deny` 强制性未测。
+- git 型分发链路（缓存物化 + registry 写入）需要真实远程 marketplace URL 才能完整验证。
+
+### 开发验证
+
+```bash
+npm run verify:codebuddy
+```
+
+运行全链路端到端验证 — 插件校验、marketplace add/install、setup、headless 冒烟会话、对 `~/.claude` 的隔离断言与清理。
+
 ## Team 模式（推荐）
 
 从 **v4.1.7** 开始，**Team** 是 OMC 的标准编排方式。**swarm** 和 **ultrapilot** 等旧版入口仍受支持，但现在**在底层路由到 Team**。
