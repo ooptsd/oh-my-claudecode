@@ -671,11 +671,11 @@ ${version ? `<!-- OMC:VERSION:${version} -->
 ${OMC_END_MARKER}
 `;
 }
-function importRanges(content) {
+function importRanges(content, importReference = "@CLAUDE-omc.md") {
   const lines = parseClaudeMdMarkers(content).lines;
   const ranges = [];
   for (let index = 0; index + 2 < lines.length; index += 1) {
-    if (lines[index].text === CLAUDE_MD_IMPORT_START && lines[index + 1].text === "@CLAUDE-omc.md" && lines[index + 2].text === CLAUDE_MD_IMPORT_END) {
+    if (lines[index].text === CLAUDE_MD_IMPORT_START && lines[index + 1].text === importReference && lines[index + 2].text === CLAUDE_MD_IMPORT_END) {
       ranges.push({ start: lines[index].start, end: lines[index + 2].eolEnd });
       index += 2;
     }
@@ -695,17 +695,17 @@ function generatedHeaderRanges(markers) {
   }
   return ranges;
 }
-function cleanedExisting(content) {
+function cleanedExisting(content, importReference = "@CLAUDE-omc.md") {
   const analysis = analyzeLegacyClaudeMd(content);
   if (analysis.markers.state === "corrupt") throw new Error(`Existing CLAUDE.md has corrupt OMC markers: ${analysis.markers.diagnostics.join(", ")}`);
-  const imports = importRanges(content).filter((range) => analysis.markers.outsideRanges.some((outside) => range.start >= outside.start && range.end <= outside.end));
+  const imports = importRanges(content, importReference).filter((range) => analysis.markers.outsideRanges.some((outside) => range.start >= outside.start && range.end <= outside.end));
   const ranges = [...analysis.markers.managedRanges, ...analysis.exactMatches, ...imports, ...generatedHeaderRanges(analysis.markers)];
   return { content: removeClaudeMdRanges(content, ranges), ranges, variants: analysis.exactMatches.map((match) => match.variantId) };
 }
-function mergeForOverwrite(existing, canonical, version) {
+function mergeForOverwrite(existing, canonical, version, importReference = "@CLAUDE-omc.md") {
   const managed = renderManaged(canonical, version);
   if (existing === null) return { content: managed, ranges: [], variants: [] };
-  const cleaned = cleanedExisting(existing);
+  const cleaned = cleanedExisting(existing, importReference);
   return { content: cleaned.content.length === 0 ? managed : `${managed}
 <!-- User customizations -->
 ${cleaned.content}`, ranges: cleaned.ranges, variants: cleaned.variants };
@@ -779,8 +779,15 @@ function executeClaudeMdTransaction(request) {
     return failure(request, 3, message(error), "validation");
   }
   const root = capturedRoot.canonical;
-  const main2 = (0, import_node_path.resolve)(root, "CLAUDE.md");
-  const companion = (0, import_node_path.resolve)(root, "CLAUDE-omc.md");
+  const memoryFileName = request.memoryFileName ?? "CLAUDE.md";
+  const companionFileName = request.companionFileName ?? "CLAUDE-omc.md";
+  const importReference = `@${companionFileName}`;
+  const importBlock = `${CLAUDE_MD_IMPORT_START}
+${importReference}
+${CLAUDE_MD_IMPORT_END}
+`;
+  const main2 = (0, import_node_path.resolve)(root, memoryFileName);
+  const companion = (0, import_node_path.resolve)(root, companionFileName);
   try {
     verifyCapturedRoot(capturedRoot, fs, true);
     validateTransactionTarget(capturedRoot, main2, true, fs, true);
@@ -790,8 +797,8 @@ function executeClaudeMdTransaction(request) {
     const companionBytes = fs.existsSync(companion) ? fs.readFileSync(companion) : void 0;
     const mainText = mainBytes ? decodeClaudeMdUtf82(mainBytes, main2) : null;
     if (companionBytes) decodeClaudeMdUtf82(companionBytes, companion);
-    const overwrite = request.mode === "global-preserve" ? { content: "", ranges: [], variants: [] } : mergeForOverwrite(mainText, canonical, request.version);
-    const preserve = mainText === null ? { content: "", ranges: [], variants: [] } : request.mode === "global-preserve" ? cleanedExisting(mainText) : { content: "", ranges: [], variants: [] };
+    const overwrite = request.mode === "global-preserve" ? { content: "", ranges: [], variants: [] } : mergeForOverwrite(mainText, canonical, request.version, importReference);
+    const preserve = mainText === null ? { content: "", ranges: [], variants: [] } : request.mode === "global-preserve" ? cleanedExisting(mainText, importReference) : { content: "", ranges: [], variants: [] };
     if (request.mode !== "local" && companionBytes && parseClaudeMdMarkers(decodeClaudeMdUtf82(companionBytes, companion)).state === "corrupt") throw new Error("Existing companion has corrupt OMC markers");
     const operations = [];
     if (request.mode === "local") operations.push({ path: main2, type: "write", existedBefore: !!mainBytes, bytes: Buffer.from(overwrite.content, "utf8") });
@@ -799,9 +806,9 @@ function executeClaudeMdTransaction(request) {
       operations.push({ path: main2, type: "write", existedBefore: !!mainBytes, bytes: Buffer.from(overwrite.content, "utf8") });
       if (companionBytes) operations.push({ path: companion, type: "delete", existedBefore: true });
     } else {
-      const imports = mainText === null ? [] : importRanges(mainText);
+      const imports = mainText === null ? [] : importRanges(mainText, importReference);
       const mainIsAlreadyOwned = imports.length > 0 && preserve.ranges.length === imports.length;
-      const mainContent = mainIsAlreadyOwned && mainBytes !== void 0 ? mainBytes : Buffer.from(`${preserve.content}${preserve.content.length ? "\n\n" : ""}${CLAUDE_MD_IMPORT_BLOCK}`, "utf8");
+      const mainContent = mainIsAlreadyOwned && mainBytes !== void 0 ? mainBytes : Buffer.from(`${preserve.content}${preserve.content.length ? "\n\n" : ""}${importBlock}`, "utf8");
       operations.push({ path: companion, type: "write", existedBefore: !!companionBytes, bytes: Buffer.from(renderManaged(canonical, request.version), "utf8") });
       operations.push({ path: main2, type: "write", existedBefore: !!mainBytes, bytes: mainContent });
     }

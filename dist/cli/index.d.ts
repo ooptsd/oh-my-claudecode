@@ -9,6 +9,7 @@
  * - config: Show or edit configuration
  * - setup: Sync all OMC components (hooks, agents, skills)
  */
+import './preload-client-env.js';
 import { Command } from 'commander';
 /**
  * Apply a --plugin-dir option value: resolve to absolute path, warn if it

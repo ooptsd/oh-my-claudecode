@@ -60,6 +60,13 @@ export interface ClaudeMdTransactionRequest {
     source: string;
     sourceRoot?: string;
     version?: string;
+    /**
+     * Main memory file name inside root (default 'CLAUDE.md'; CodeBuddy sessions
+     * use 'CODEBUDDY.md'). Defaults keep historical behaviour byte-identical.
+     */
+    memoryFileName?: string;
+    /** Companion file name inside root (default 'CLAUDE-omc.md'; CodeBuddy: 'CODEBUDDY-omc.md'). */
+    companionFileName?: string;
     /** A coordinator-verified canonical buffer. This prevents a second source read/swap. */
     sourceBytes?: Buffer;
     /** Test-only synchronous filesystem seam. */

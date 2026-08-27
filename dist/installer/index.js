@@ -16,6 +16,8 @@ import { execSync } from 'child_process';
 import { isWindows, MIN_NODE_VERSION, getHooksSettingsConfig, } from './hooks.js';
 import { getRuntimePackageVersion } from '../lib/version.js';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { isCodebuddySession, resolveClientConfigDir } from '../utils/client.js';
+import { getMemoryCompanionFileName, getMemoryFileName } from '../utils/memory-file.js';
 import { resolveNodeBinary } from '../utils/resolve-node.js';
 import { parseFrontmatter } from '../utils/frontmatter.js';
 import { isSkininthegamebrosUser } from '../utils/skininthegamebros-user.js';
@@ -160,9 +162,13 @@ function getNewestInstalledVersionHint() {
             // Ignore unreadable metadata and fall back to CLAUDE.md markers.
         }
     }
+    // Client-aware memory file name (CODEBUDDY.md in a CodeBuddy session): the
+    // homedir legacy fallback stays client-specific too so a CodeBuddy install
+    // never takes its version hint from a Claude-mode ~/CLAUDE.md.
+    const memoryFileName = getMemoryFileName();
     const claudeCandidates = [
-        join(CLAUDE_CONFIG_DIR, 'CLAUDE.md'),
-        join(homedir(), 'CLAUDE.md'),
+        join(CLAUDE_CONFIG_DIR, memoryFileName),
+        join(homedir(), memoryFileName),
     ];
     for (const candidatePath of claudeCandidates) {
         if (!existsSync(candidatePath))
@@ -1935,7 +1941,8 @@ export function syncPersistedSetupVersion(options) {
     }
     let detectedVersion = options?.version?.trim();
     if (!detectedVersion) {
-        const claudeMdPath = options?.claudeMdPath ?? join(CLAUDE_CONFIG_DIR, 'CLAUDE.md');
+        // Client-aware memory file name (CODEBUDDY.md in a CodeBuddy session).
+        const claudeMdPath = options?.claudeMdPath ?? join(CLAUDE_CONFIG_DIR, getMemoryFileName());
         if (existsSync(claudeMdPath)) {
             detectedVersion = extractOmcVersionFromClaudeMd(readFileSync(claudeMdPath, 'utf-8')) ?? undefined;
         }
@@ -1992,9 +1999,36 @@ export function mergeClaudeMd(existingContent, omcContent, version) {
     return `${START_MARKER}\n${versionMarker}${cleanOmcContent}\n${END_MARKER}\n\n${USER_CUSTOMIZATIONS}\n${preservedUserContent}`;
 }
 /**
+ * Fail-loud client config-dir guard (CodeBuddy support).
+ *
+ * The installer freezes CLAUDE_CONFIG_DIR into module-level constants at
+ * import time. In a CodeBuddy session the live environment must resolve to
+ * ~/.codebuddy (see src/utils/client.ts); if the frozen constant disagrees,
+ * the client env preload (src/cli/preload-client-env.ts, first import of
+ * src/cli/index.ts) did not run before this module was evaluated — e.g. an
+ * import path that bypasses the CLI entrypoints. Refuse to install rather
+ * than silently writing Claude-style state into ~/.claude.
+ *
+ * Claude sessions pass through unchanged (custom CLAUDE_CONFIG_DIR semantics
+ * preserved, including env mutated after import).
+ */
+function assertInstallerClientConfigDirAlignment() {
+    if (!isCodebuddySession(process.env)) {
+        return;
+    }
+    const resolved = resolveClientConfigDir(process.env);
+    if (normalizePath(CLAUDE_CONFIG_DIR) === normalizePath(resolved)) {
+        return;
+    }
+    throw new Error(`[omc] CodeBuddy session detected, but the installer config dir is frozen to "${CLAUDE_CONFIG_DIR}" while the session resolves to "${resolved}". `
+        + 'The client env preload did not run before the installer module was evaluated; refusing to install to avoid polluting ~/.claude. '
+        + 'Invoke OMC via the omc/oh-my-claudecode/omc-cli entrypoints (bridge/cli.cjs), or pass --client codebuddy / set CLAUDE_CONFIG_DIR and OMC_CLIENT explicitly.');
+}
+/**
  * Install OMC agents, commands, skills, and hooks
  */
 export function install(options = {}) {
+    assertInstallerClientConfigDirAlignment();
     const result = {
         success: false,
         message: '',
@@ -2238,18 +2272,23 @@ export function install(options = {}) {
         // Keep the public installer on the same raw-byte transaction path as setup.
         // The public string merger remains exported for callers that use it directly.
         if (!projectScoped) {
+            // Client-aware target names (CODEBUDDY.md/CODEBUDDY-omc.md in a
+            // CodeBuddy session); defaults keep the historical CLAUDE.md behaviour.
+            const memoryFileName = getMemoryFileName();
             const transaction = executeClaudeMdTransaction({
                 mode: 'global-overwrite',
                 root: CLAUDE_CONFIG_DIR,
                 source: join(getPackageDir(), 'docs', 'CLAUDE.md'),
                 sourceRoot: getPackageDir(),
                 version: targetVersion,
+                memoryFileName,
+                companionFileName: getMemoryCompanionFileName(),
             });
             if (!transaction.ok)
                 throw new Error(transaction.error ?? 'CLAUDE.md transaction failed');
             for (const backupPath of transaction.backups)
                 log(`Backed up existing CLAUDE.md to ${backupPath}`);
-            log(transaction.operations.some(operation => operation.type === 'write' && operation.existedBefore && basename(operation.path) === 'CLAUDE.md')
+            log(transaction.operations.some(operation => operation.type === 'write' && operation.existedBefore && basename(operation.path) === memoryFileName)
                 ? 'Updated CLAUDE.md (merged with existing content)'
                 : 'Created CLAUDE.md');
         }

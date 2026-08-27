@@ -35,7 +35,7 @@ __export(bridge_exports, {
 });
 module.exports = __toCommonJS(bridge_exports);
 var import_fs2 = require("fs");
-var import_path3 = require("path");
+var import_path4 = require("path");
 var import_os3 = require("os");
 
 // src/lib/worktree-paths.ts
@@ -43,9 +43,12 @@ var import_crypto = require("crypto");
 var import_child_process = require("child_process");
 var import_fs = require("fs");
 var import_os2 = require("os");
-var import_path2 = require("path");
+var import_path3 = require("path");
 
 // src/utils/config-dir.ts
+var import_path2 = require("path");
+
+// src/utils/client.ts
 var import_path = require("path");
 var import_os = require("os");
 
@@ -78,7 +81,7 @@ function findWorkspaceRoot(startDir) {
   const effectiveStart = startDir || process.cwd();
   let current;
   try {
-    current = (0, import_path2.resolve)(effectiveStart);
+    current = (0, import_path3.resolve)(effectiveStart);
   } catch {
     return null;
   }
@@ -90,7 +93,7 @@ function findWorkspaceRoot(startDir) {
   }
   const home = (() => {
     try {
-      return (0, import_path2.resolve)((0, import_os2.homedir)());
+      return (0, import_path3.resolve)((0, import_os2.homedir)());
     } catch {
       return null;
     }
@@ -99,11 +102,11 @@ function findWorkspaceRoot(startDir) {
   let result = null;
   while (true) {
     if (home && cursor === home) break;
-    if ((0, import_fs.existsSync)((0, import_path2.join)(cursor, WORKSPACE_MARKER))) {
+    if ((0, import_fs.existsSync)((0, import_path3.join)(cursor, WORKSPACE_MARKER))) {
       result = cursor;
       break;
     }
-    const parent = (0, import_path2.dirname)(cursor);
+    const parent = (0, import_path3.dirname)(cursor);
     if (parent === cursor) break;
     cursor = parent;
   }
@@ -116,7 +119,7 @@ function findWorkspaceRoot(startDir) {
 }
 function readWorkspaceMarkerConfig(workspaceRoot) {
   try {
-    const raw = (0, import_fs.readFileSync)((0, import_path2.join)(workspaceRoot, WORKSPACE_MARKER), "utf-8").trim();
+    const raw = (0, import_fs.readFileSync)((0, import_path3.join)(workspaceRoot, WORKSPACE_MARKER), "utf-8").trim();
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -135,7 +138,7 @@ function isDefinitiveNonGitError(error) {
   return /not a git repository/i.test(output);
 }
 function resolveSuperprojectRoot(cwd) {
-  const cacheKey = (0, import_path2.resolve)(cwd);
+  const cacheKey = (0, import_path3.resolve)(cwd);
   if (superprojectCacheMap.has(cacheKey)) {
     const cached = superprojectCacheMap.get(cacheKey) ?? null;
     superprojectCacheMap.delete(cacheKey);
@@ -238,7 +241,7 @@ function getProjectIdentifier(worktreeRoot) {
       return `${safeId}-${hash3}`;
     }
     const hash2 = (0, import_crypto.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
-    const dirName2 = (0, import_path2.basename)(workspaceRoot).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const dirName2 = (0, import_path3.basename)(workspaceRoot).replace(/[^a-zA-Z0-9_-]/g, "_");
     return `${dirName2}-${hash2}`;
   }
   let source;
@@ -262,10 +265,10 @@ function getProjectIdentifier(worktreeRoot) {
       windowsHide: true,
       timeout: 5e3
     }).trim();
-    const isGitDir = (0, import_path2.basename)(commonDir) === ".git";
-    const isSubmodule = commonDir.includes(`${import_path2.sep}.git${import_path2.sep}modules`);
+    const isGitDir = (0, import_path3.basename)(commonDir) === ".git";
+    const isSubmodule = commonDir.includes(`${import_path3.sep}.git${import_path3.sep}modules`);
     if (isGitDir && !isSubmodule) {
-      const resolved = (0, import_path2.dirname)(commonDir);
+      const resolved = (0, import_path3.dirname)(commonDir);
       if (resolved && resolved !== root) {
         primaryRoot = resolved;
       }
@@ -273,7 +276,7 @@ function getProjectIdentifier(worktreeRoot) {
   } catch {
   }
   const hash = (0, import_crypto.createHash)("sha256").update(source).digest("hex").slice(0, 16);
-  const dirName = (0, import_path2.basename)(primaryRoot).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const dirName = (0, import_path3.basename)(primaryRoot).replace(/[^a-zA-Z0-9_-]/g, "_");
   return `${dirName}-${hash}`;
 }
 function getOmcRoot(worktreeRoot) {
@@ -281,8 +284,8 @@ function getOmcRoot(worktreeRoot) {
   if (customDir) {
     const root2 = worktreeRoot || getGitTopLevel() || process.cwd();
     const projectId = getProjectIdentifier(root2);
-    const centralizedPath = (0, import_path2.join)(customDir, projectId);
-    const legacyPath = (0, import_path2.join)(root2, OmcPaths.ROOT);
+    const centralizedPath = (0, import_path3.join)(customDir, projectId);
+    const legacyPath = (0, import_path3.join)(root2, OmcPaths.ROOT);
     const warningKey = `${legacyPath}:${centralizedPath}`;
     if (!dualDirWarnings.has(warningKey) && (0, import_fs.existsSync)(legacyPath) && (0, import_fs.existsSync)(centralizedPath)) {
       dualDirWarnings.add(warningKey);
@@ -294,10 +297,10 @@ function getOmcRoot(worktreeRoot) {
   }
   const workspaceAnchor = findWorkspaceRoot(worktreeRoot);
   if (workspaceAnchor) {
-    return (0, import_path2.join)(workspaceAnchor, OmcPaths.ROOT);
+    return (0, import_path3.join)(workspaceAnchor, OmcPaths.ROOT);
   }
   const root = resolveStateAnchorRoot(worktreeRoot);
-  return (0, import_path2.join)(root, OmcPaths.ROOT);
+  return (0, import_path3.join)(root, OmcPaths.ROOT);
 }
 
 // src/hooks/learner/parser.ts
@@ -431,15 +434,15 @@ function expandTriggers(triggersLower) {
 }
 
 // src/hooks/learner/bridge.ts
-var USER_SKILLS_DIR = (0, import_path3.join)(
+var USER_SKILLS_DIR = (0, import_path4.join)(
   (0, import_os3.homedir)(),
   ".claude",
   "skills",
   "omc-learned"
 );
-var GLOBAL_SKILLS_DIR = (0, import_path3.join)((0, import_os3.homedir)(), ".omc", "skills");
+var GLOBAL_SKILLS_DIR = (0, import_path4.join)((0, import_os3.homedir)(), ".omc", "skills");
 var PROJECT_SKILLS_SUBDIR = OmcPaths.SKILLS;
-var PROJECT_AGENT_SKILLS_SUBDIR = (0, import_path3.join)(".agents", "skills");
+var PROJECT_AGENT_SKILLS_SUBDIR = (0, import_path4.join)(".agents", "skills");
 var SKILL_EXTENSION = ".md";
 var SESSION_TTL_MS = 60 * 60 * 1e3;
 var MAX_RECURSION_DEPTH = 10;
@@ -484,7 +487,7 @@ function getSkillMetadataCache(projectRoot) {
       if (!parsed) continue;
       const triggers = (parsed.metadata.triggers ?? []).map((trigger) => trigger.trim()).filter(Boolean);
       if (triggers.length === 0) continue;
-      const name = parsed.metadata.name || (0, import_path3.basename)(candidate.path, SKILL_EXTENSION);
+      const name = parsed.metadata.name || (0, import_path4.basename)(candidate.path, SKILL_EXTENSION);
       skills.push({
         path: candidate.path,
         name,
@@ -517,7 +520,7 @@ function summarizeSkillContent(content) {
   return (firstUsefulLine || content.replace(/\s+/g, " ").trim()).slice(0, 240);
 }
 function getStateFilePath(projectRoot) {
-  return (0, import_path3.join)(getOmcRoot(projectRoot), "state", "skill-sessions.json");
+  return (0, import_path4.join)(getOmcRoot(projectRoot), "state", "skill-sessions.json");
 }
 function readSessionState(projectRoot) {
   const stateFile = getStateFilePath(projectRoot);
@@ -533,7 +536,7 @@ function readSessionState(projectRoot) {
 function writeSessionState(projectRoot, state) {
   const stateFile = getStateFilePath(projectRoot);
   try {
-    (0, import_fs2.mkdirSync)((0, import_path3.dirname)(stateFile), { recursive: true });
+    (0, import_fs2.mkdirSync)((0, import_path4.dirname)(stateFile), { recursive: true });
     (0, import_fs2.writeFileSync)(stateFile, JSON.stringify(state, null, 2), "utf-8");
   } catch {
   }
@@ -568,7 +571,7 @@ function findSkillFilesRecursive(dir, results, depth = 0) {
   try {
     const entries = (0, import_fs2.readdirSync)(dir, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = (0, import_path3.join)(dir, entry.name);
+      const fullPath = (0, import_path4.join)(dir, entry.name);
       if (entry.isDirectory()) {
         findSkillFilesRecursive(fullPath, results, depth + 1);
       } else if (entry.isFile() && entry.name.endsWith(SKILL_EXTENSION)) {
@@ -596,8 +599,8 @@ function findSkillFiles(projectRoot, options) {
   const scope = options?.scope ?? "all";
   if (scope === "project" || scope === "all") {
     const projectSkillDirs = [
-      (0, import_path3.join)(projectRoot, PROJECT_SKILLS_SUBDIR),
-      (0, import_path3.join)(projectRoot, PROJECT_AGENT_SKILLS_SUBDIR)
+      (0, import_path4.join)(projectRoot, PROJECT_SKILLS_SUBDIR),
+      (0, import_path4.join)(projectRoot, PROJECT_AGENT_SKILLS_SUBDIR)
     ];
     for (const projectSkillsDir of projectSkillDirs) {
       const projectFiles = [];
