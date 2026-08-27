@@ -165,6 +165,66 @@ If you're uncertain about requirements, have a vague idea, or want to micromanag
 
 The deep interview uses Socratic questioning to clarify your thinking before any code is written. It exposes hidden assumptions and measures clarity across weighted dimensions, ensuring you know exactly what to build before execution begins.
 
+## CodeBuddy Support
+
+OMC also runs natively in the CodeBuddy CLI — the same plugin loads with all skills, commands, agents, hooks, and the MCP server, plus CodeBuddy-specific state isolation.
+
+### Install
+
+Run from your shell, with `<repo-url>` pointing at the OMC repository's remote git URL:
+
+```bash
+codebuddy plugin marketplace add <repo-url>
+codebuddy plugin install oh-my-claudecode@omc
+```
+
+After a remote git-type marketplace install, the plugin is materialized into the local plugin cache and loaded through that cache projection. Installing from a local directory path is for development only — directory-installed plugins are not loaded in headless (`-p`) sessions. To develop or debug against a local checkout, load it directly instead:
+
+```bash
+codebuddy --plugin-dir <repo> -p "your prompt"
+```
+
+> `--plugin-dir` accepts multiple directories, so the prompt must come after it.
+
+### Setup
+
+```bash
+omc setup --client codebuddy
+```
+
+CodeBuddy sessions are auto-detected from `CODEBUDDY_*` plugin environment signals, so the flag can be omitted when setup runs inside a CodeBuddy session; `--client claude` forces the Claude target. Setup writes only to the CodeBuddy side:
+
+- `~/.codebuddy/CODEBUDDY.md` — memory file, merged via the `OMC:START` marker
+- statusLine / HUD configuration in `~/.codebuddy/settings.json`
+- the managed MCP server registration in `~/.codebuddy/.mcp.json` (when OMC manages MCP servers)
+- the user-level hook channel
+
+Environment variables: `OMC_CLIENT=claude|codebuddy` explicitly overrides client detection; `OMC_PRELOAD_DISABLED=1` disables the CLI preload that redirects config paths (mainly for tests).
+
+### Components and model semantics
+
+All components load under the `oh-my-claudecode:` namespace — 31 skills, 21 commands, 19 agents, 26 hooks, and MCP server `t`; slash commands work both as `/oh-my-claudecode:<cmd>` and by bare name. Agents frontmatter ships unchanged: CodeBuddy natively falls back to the main session model for the `opus`/`sonnet`/`haiku` aliases, which is equivalent to `model: inherit`. To restore tiered model routing, use the CodeBuddy settings key `subagents.agents.<name>.model` or OMC's existing `agents.<name>.model` / `OMC_SUBAGENT_MODEL` overrides.
+
+### State isolation
+
+CodeBuddy sessions keep user-level state under `~/.codebuddy` and project-level state under `.codebuddy/`, fully isolated from Claude sessions — `~/.claude` is never written. Writes to `~/.codex` are pre-existing upstream unified-registry behavior and remain unchanged.
+
+### Known limitations
+
+- In headless (`-p`) sessions, plugin-level `UserPromptSubmit` hooks race with plugin registration and do not fire, so keyword detection on that channel is ineffective. The user-level hook channel installed by `omc setup --client codebuddy` works in `-p` sessions.
+- Plugin `PreToolUse` `deny` decisions are parsed but not enforced in `-p` mode, and the hook input-rewrite field `updatedInput` does not match CodeBuddy's `modifiedInput`.
+- MCP tools are reached indirectly through CodeBuddy's `ToolSearch` / `DeferExecuteTool` lazy loading rather than appearing directly in the tool list.
+- Interactive (TUI) mode, and `deny` enforcement there, are untested.
+- The git-type distribution chain (cache materialization plus registry writes) needs a real remote marketplace URL to be verified end-to-end.
+
+### Development verification
+
+```bash
+npm run verify:codebuddy
+```
+
+Runs the full end-to-end chain — plugin validation, marketplace add/install, setup, a headless smoke session, isolation assertions against `~/.claude`, and cleanup.
+
 ## Team Mode (Recommended)
 
 Starting in **v4.1.7**, **Team** is the canonical orchestration surface in OMC. The legacy `swarm` keyword/skill has been removed; use `team` directly.
