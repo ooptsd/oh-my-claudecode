@@ -5,15 +5,15 @@
   "provenance": {
     "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
     "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-    "head": "ebecf3f82827a8488ce214535a55be97a5bafb2a",
-    "sourceSha256": "2e809c02aa89f613e6ef01e2c0212ef86693bb03b57f3b7f77180ca8871163e8",
+    "head": "08db8be068c2d5e12c061958952715555dc6d1b0",
+    "sourceSha256": "037aa1c2472a0c8be47dd11e6ad28aba20d5d806848cbfe811185dbc7b85fa36",
     "generatedAt": null,
     "generator": "scripts/generate-inventory-graph.mjs"
   },
   "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
   "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-  "head": "ebecf3f82827a8488ce214535a55be97a5bafb2a",
-  "sourceSha256": "2e809c02aa89f613e6ef01e2c0212ef86693bb03b57f3b7f77180ca8871163e8",
+  "head": "08db8be068c2d5e12c061958952715555dc6d1b0",
+  "sourceSha256": "037aa1c2472a0c8be47dd11e6ad28aba20d5d806848cbfe811185dbc7b85fa36",
   "counts": {
     "public": {
       "skills": 31,
@@ -28,13 +28,13 @@
       "toolFiles": 56,
       "libFiles": 34,
       "templateHooks": 21,
-      "srcFiles": 1280,
-      "total": 1301
+      "srcFiles": 1284,
+      "total": 1305
     },
     "generated": {
-      "distFiles": 4999,
+      "distFiles": 5003,
       "bridgeFiles": 9,
-      "total": 5008
+      "total": 5012
     },
     "prompt": {
       "promptLikeFiles": 63
@@ -729,6 +729,7 @@
       "scripts/lib/atomic-write.mjs",
       "scripts/lib/bounded-git-timeout.mjs",
       "scripts/lib/cache-occupancy.mjs",
+      "scripts/lib/client-paths.mjs",
       "scripts/lib/config-dir.cjs",
       "scripts/lib/config-dir.mjs",
       "scripts/lib/config-dir.sh",
@@ -5709,6 +5710,10 @@
       "dist/utils/cache-occupancy.d.ts.map",
       "dist/utils/cache-occupancy.js",
       "dist/utils/cache-occupancy.js.map",
+      "dist/utils/client.d.ts",
+      "dist/utils/client.d.ts.map",
+      "dist/utils/client.js",
+      "dist/utils/client.js.map",
       "dist/utils/config-dir.d.ts",
       "dist/utils/config-dir.d.ts.map",
       "dist/utils/config-dir.js",
@@ -31745,6 +31750,26 @@
         "path": "dist/utils/cache-occupancy.js.map"
       },
       {
+        "id": "dist/utils/client.d.ts",
+        "kind": "generated-dist",
+        "path": "dist/utils/client.d.ts"
+      },
+      {
+        "id": "dist/utils/client.d.ts.map",
+        "kind": "generated-dist",
+        "path": "dist/utils/client.d.ts.map"
+      },
+      {
+        "id": "dist/utils/client.js",
+        "kind": "generated-dist",
+        "path": "dist/utils/client.js"
+      },
+      {
+        "id": "dist/utils/client.js.map",
+        "kind": "generated-dist",
+        "path": "dist/utils/client.js.map"
+      },
+      {
         "id": "dist/utils/config-dir.d.ts",
         "kind": "generated-dist",
         "path": "dist/utils/config-dir.d.ts"
@@ -33070,6 +33095,11 @@
         "path": "scripts/lib/cache-occupancy.mjs"
       },
       {
+        "id": "scripts/lib/client-paths.mjs",
+        "kind": "script",
+        "path": "scripts/lib/client-paths.mjs"
+      },
+      {
         "id": "scripts/lib/config-dir.cjs",
         "kind": "script",
         "path": "scripts/lib/config-dir.cjs"
@@ -33963,6 +33993,16 @@
         "id": "src/__tests__/cli-win32-warning.test.ts",
         "kind": "src",
         "path": "src/__tests__/cli-win32-warning.test.ts"
+      },
+      {
+        "id": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "kind": "src",
+        "path": "src/__tests__/client-config-dir-mirrors.test.ts"
+      },
+      {
+        "id": "src/__tests__/client-project-paths.test.ts",
+        "kind": "src",
+        "path": "src/__tests__/client-project-paths.test.ts"
       },
       {
         "id": "src/__tests__/compact-denylist.test.ts",
@@ -40095,6 +40135,11 @@
         "path": "src/utils/__tests__/cache-occupancy.test.ts"
       },
       {
+        "id": "src/utils/__tests__/client.test.ts",
+        "kind": "src",
+        "path": "src/utils/__tests__/client.test.ts"
+      },
+      {
         "id": "src/utils/__tests__/encode-project-path.test.ts",
         "kind": "src",
         "path": "src/utils/__tests__/encode-project-path.test.ts"
@@ -40123,6 +40168,11 @@
         "id": "src/utils/cache-occupancy.ts",
         "kind": "src",
         "path": "src/utils/cache-occupancy.ts"
+      },
+      {
+        "id": "src/utils/client.ts",
+        "kind": "src",
+        "path": "src/utils/client.ts"
       },
       {
         "id": "src/utils/config-dir.ts",
@@ -41434,6 +41484,11 @@
       {
         "from": "scripts/keyword-detector.mjs",
         "to": "scripts/lib/atomic-write.mjs",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/keyword-detector.mjs",
+        "to": "scripts/lib/client-paths.mjs",
         "kind": "imports"
       },
       {
@@ -43424,6 +43479,76 @@
       {
         "from": "src/__tests__/cli-win32-warning.test.ts",
         "to": "src/cli/win32-warning.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:node:child_process",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:node:url",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-config-dir-mirrors.test.ts",
+        "to": "src/utils/client.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:node:child_process",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:node:url",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/__tests__/client-project-paths.test.ts",
+        "to": "src/hooks/rules-injector/finder.ts",
         "kind": "imports"
       },
       {
@@ -58534,6 +58659,11 @@
       {
         "from": "src/hooks/rules-injector/constants.ts",
         "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/hooks/rules-injector/constants.ts",
+        "to": "src/utils/client.ts",
         "kind": "imports"
       },
       {
@@ -73772,6 +73902,36 @@
         "kind": "imports"
       },
       {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "src/utils/client.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/client.test.ts",
+        "to": "src/utils/config-dir.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/utils/__tests__/encode-project-path.test.ts",
         "to": "external:vitest",
         "kind": "imports"
@@ -73852,13 +74012,23 @@
         "kind": "imports"
       },
       {
-        "from": "src/utils/config-dir.ts",
+        "from": "src/utils/client.ts",
         "to": "external:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/client.ts",
+        "to": "external:path",
         "kind": "imports"
       },
       {
         "from": "src/utils/config-dir.ts",
         "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/config-dir.ts",
+        "to": "src/utils/client.ts",
         "kind": "imports"
       },
       {
@@ -75108,12 +75278,12 @@
       }
     ],
     "stats": {
-      "nodeCount": 6842,
-      "edgeCount": 6913,
-      "importEdgeCount": 5668,
+      "nodeCount": 6851,
+      "edgeCount": 6937,
+      "importEdgeCount": 5692,
       "registerEdgeCount": 52
     }
   },
-  "inventorySha256": "dd4a8b7a76c74e9d9cea06fcce6c0c1584ed66b7d666d39421ce18bab6604d68",
-  "manifestSha256": "292753b998df3558c9beb0be60453a11cfe367b66b818ce37266e75b6d3c2fd4"
+  "inventorySha256": "a6cec8726304549389ba000933eac04fbbe931cdb618722a244cf4c5ff1de758",
+  "manifestSha256": "9e1db685c472bb6e45d49b2e316632ee9adf1142a8e654ac6d9aee384563e0d7"
 }

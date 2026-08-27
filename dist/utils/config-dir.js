@@ -3,46 +3,38 @@
  *
  * Resolves the active Claude Code configuration directory, honouring
  * CLAUDE_CONFIG_DIR (absolute path, or ~-prefixed) with fallback to
- * ~/.claude.  Trailing separators are stripped; filesystem roots are
+ * ~/.claude. Trailing separators are stripped; filesystem roots are
  * preserved.
+ *
+ * In a detected CodeBuddy session (see src/utils/client.ts) this resolves to
+ * ~/.codebuddy instead, so CodeBuddy hook state never lands in ~/.claude.
  *
  * Multi-surface mirrors (keep in sync):
  *   scripts/lib/config-dir.mjs   — ESM hook/HUD runtime
  *   scripts/lib/config-dir.cjs   — CJS bridge runtime
  *   scripts/lib/config-dir.sh    — POSIX shell runtime
  */
-import { join, normalize, parse, sep } from 'path';
-import { homedir } from 'os';
-/**
- * Strip a single trailing path separator (preserve filesystem root).
- * @internal Shared with scripts/lib/config-dir.{mjs,cjs,sh} — keep in sync.
- */
-function stripTrailingSep(p) {
-    if (!p.endsWith(sep)) {
-        return p;
-    }
-    return p === parse(p).root ? p : p.slice(0, -1);
-}
+import { join } from 'path';
+import { isCodebuddySession, resolveClientConfigDir } from './client.js';
+let warnedCodebuddyConfigDirOverride = false;
 /**
  * Resolve the Claude Code configuration directory.
  *
- * Honours CLAUDE_CONFIG_DIR (absolute path, or ~-prefixed) with fallback
- * to ~/.claude.  Trailing separators are stripped; filesystem roots are
- * preserved.
+ * Delegates to resolveClientConfigDir() (client-aware). When the CodeBuddy
+ * session signature outranks an ambient CLAUDE_CONFIG_DIR export, a
+ * one-shot-per-process stderr warning explains the override; an explicit
+ * OMC_CLIENT=codebuddy is user intent and stays silent.
  */
 export function getClaudeConfigDir() {
-    const home = homedir();
-    const configured = process.env.CLAUDE_CONFIG_DIR?.trim();
-    if (!configured) {
-        return stripTrailingSep(normalize(join(home, '.claude')));
+    if (isCodebuddySession() &&
+        process.env.OMC_CLIENT?.trim() !== 'codebuddy' &&
+        process.env.CLAUDE_CONFIG_DIR?.trim()) {
+        if (!warnedCodebuddyConfigDirOverride) {
+            warnedCodebuddyConfigDirOverride = true;
+            process.stderr.write('[omc] CodeBuddy session detected; ignoring CLAUDE_CONFIG_DIR and using ~/.codebuddy (set OMC_CLIENT=claude to override)\n');
+        }
     }
-    if (configured === '~') {
-        return stripTrailingSep(normalize(home));
-    }
-    if (configured.startsWith('~/') || configured.startsWith('~\\')) {
-        return stripTrailingSep(normalize(join(home, configured.slice(2))));
-    }
-    return stripTrailingSep(normalize(configured));
+    return resolveClientConfigDir();
 }
 /**
  * Resolve the OMC global configuration/cache directory under the active Claude

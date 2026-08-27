@@ -1,6 +1,35 @@
 import { homedir } from 'node:os';
 import { join, normalize, parse, sep } from 'node:path';
 
+// Client detection mirrors src/utils/client.ts (keep semantics in sync —
+// enforced by src/__tests__/client-config-dir-mirrors.test.ts):
+//   1. OMC_CLIENT=claude|codebuddy overrides detection (other values ignored)
+//   2. CodeBuddy session signature wins over an ambient CLAUDE_CONFIG_DIR:
+//      CODEBUDDY_PLUGIN_ROOT / CODEBUDDY_PLUGIN_DIRS / CODEBUDDY_PLUGIN_DATA
+//      set to a non-empty value → ~/.codebuddy
+//   3. otherwise CLAUDE_CONFIG_DIR (absolute or ~-prefixed) is honoured
+//   4. fallback ~/.claude
+
+function trimmedEnvValue(env, key) {
+  const value = env[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function hasCodebuddySessionEnv(env) {
+  return (
+    trimmedEnvValue(env, 'CODEBUDDY_PLUGIN_ROOT') !== '' ||
+    trimmedEnvValue(env, 'CODEBUDDY_PLUGIN_DIRS') !== '' ||
+    trimmedEnvValue(env, 'CODEBUDDY_PLUGIN_DATA') !== ''
+  );
+}
+
+export function detectClient(env = process.env) {
+  const override = trimmedEnvValue(env, 'OMC_CLIENT');
+  if (override === 'codebuddy') return 'codebuddy';
+  if (override === 'claude') return 'claude';
+  return hasCodebuddySessionEnv(env) ? 'codebuddy' : 'claude';
+}
+
 function stripTrailingSep(p) {
   if (!p.endsWith(sep)) {
     return p;
@@ -9,8 +38,27 @@ function stripTrailingSep(p) {
   return p === parse(p).root ? p : p.slice(0, -1);
 }
 
+let warnedCodebuddyConfigDirOverride = false;
+
 export function getClaudeConfigDir() {
   const home = homedir();
+
+  if (detectClient() === 'codebuddy') {
+    // The session signature outranks an ambient CLAUDE_CONFIG_DIR export; an
+    // explicit OMC_CLIENT=codebuddy is user intent and stays silent.
+    if (
+      trimmedEnvValue(process.env, 'OMC_CLIENT') !== 'codebuddy' &&
+      trimmedEnvValue(process.env, 'CLAUDE_CONFIG_DIR') !== '' &&
+      !warnedCodebuddyConfigDirOverride
+    ) {
+      warnedCodebuddyConfigDirOverride = true;
+      process.stderr.write(
+        '[omc] CodeBuddy session detected; ignoring CLAUDE_CONFIG_DIR and using ~/.codebuddy (set OMC_CLIENT=claude to override)\n',
+      );
+    }
+    return stripTrailingSep(normalize(join(home, '.codebuddy')));
+  }
+
   const configured = process.env.CLAUDE_CONFIG_DIR?.trim();
 
   if (!configured) {

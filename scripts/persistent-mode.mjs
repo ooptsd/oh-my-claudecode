@@ -99,6 +99,7 @@ const { advanceWorkflowOnStop, isValidWorkflowDescriptor, isValidWorkflowTrackin
 const { acquireStateFileLockSync, atomicWriteFileSync, isStateFileLockingSupported, releaseStateFileLockSync, withStateFileLockSync } = await import(pathToFileURL(join(__dirname, "lib", "atomic-write.mjs")).href);
 
 const { getClaudeConfigDir } = await import(pathToFileURL(join(__dirname, "lib", "config-dir.mjs")).href);
+const { projectClientDirName } = await import(pathToFileURL(join(__dirname, "lib", "client-paths.mjs")).href);
 const { readStdin } = await import(
   pathToFileURL(join(__dirname, "lib", "stdin.mjs")).href
 );
@@ -134,7 +135,7 @@ function getHardMaxIterations() {
  */
 function readSecurityConfigValue(key) {
   const paths = [
-    join(process.cwd(), ".claude", "omc.jsonc"),
+    join(process.cwd(), projectClientDirName(), "omc.jsonc"),
     join(homedir(), ".config", "claude-omc", "config.jsonc"),
   ];
   for (const p of paths) {
@@ -996,7 +997,7 @@ async function countIncompleteTodos(sessionId, projectDir) {
   const omcRoot = await resolveOmcStateRoot(projectDir);
   for (const path of [
     join(omcRoot, "todos.json"),
-    join(projectDir, ".claude", "todos.json"),
+    join(projectDir, projectClientDirName(), "todos.json"),
   ]) {
     try {
       const data = readJsonFile(path);
