@@ -28,7 +28,11 @@ resolve_claude_config_dir() {
   else
     configured="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
   fi
-  configured="${configured%/}"
+  # Strip trailing separators (all of them) while preserving the filesystem
+  # root — mirrors stripTrailingSep + normalize in src/utils/client.ts.
+  while [ "$configured" != "/" ] && [ "${configured%/}" != "$configured" ]; do
+    configured="${configured%/}"
+  done
   case "$configured" in
     \~)
       printf '%s\n' "$HOME"

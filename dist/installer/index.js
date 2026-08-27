@@ -2287,10 +2287,10 @@ export function install(options = {}) {
             if (!transaction.ok)
                 throw new Error(transaction.error ?? 'CLAUDE.md transaction failed');
             for (const backupPath of transaction.backups)
-                log(`Backed up existing CLAUDE.md to ${backupPath}`);
+                log(`Backed up existing ${memoryFileName} to ${backupPath}`);
             log(transaction.operations.some(operation => operation.type === 'write' && operation.existedBefore && basename(operation.path) === memoryFileName)
-                ? 'Updated CLAUDE.md (merged with existing content)'
-                : 'Created CLAUDE.md');
+                ? `Updated ${memoryFileName} (merged with existing content)`
+                : `Created ${memoryFileName}`);
         }
         // Install HUD statusline (skip for project-scoped plugins, skipHud option, or hudEnabled config)
         let hudScriptPath = null;

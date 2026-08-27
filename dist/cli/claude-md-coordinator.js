@@ -43,11 +43,11 @@ export function runClaudeMdCoordinator(input) {
     try {
         if (!isObject(input))
             return { exitCode: 2, response: coordinatorError(2, 'Request must be an object') };
-        const allowed = new Set(['schemaVersion', 'engineVersion', 'mode', 'configRoot', 'pluginRoot', 'sourcePath', 'sourceSha256', 'sourceVersion']);
+        const allowed = new Set(['schemaVersion', 'engineVersion', 'mode', 'configRoot', 'pluginRoot', 'sourcePath', 'sourceSha256', 'sourceVersion', 'memoryFileName', 'companionFileName']);
         if (Object.keys(input).some(key => !allowed.has(key)))
             return { exitCode: 2, response: coordinatorError(2, 'Unknown request field') };
         const { mode } = input;
-        if (input.schemaVersion !== CLAUDE_MD_COORDINATOR_SCHEMA_VERSION || input.engineVersion !== COMPILED_ENGINE_VERSION || (mode !== 'local' && mode !== 'global-overwrite' && mode !== 'global-preserve') || typeof input.configRoot !== 'string' || typeof input.pluginRoot !== 'string' || typeof input.sourcePath !== 'string' || typeof input.sourceSha256 !== 'string' || typeof input.sourceVersion !== 'string')
+        if (input.schemaVersion !== CLAUDE_MD_COORDINATOR_SCHEMA_VERSION || input.engineVersion !== COMPILED_ENGINE_VERSION || (mode !== 'local' && mode !== 'global-overwrite' && mode !== 'global-preserve') || typeof input.configRoot !== 'string' || typeof input.pluginRoot !== 'string' || typeof input.sourcePath !== 'string' || typeof input.sourceSha256 !== 'string' || typeof input.sourceVersion !== 'string' || (input.memoryFileName !== undefined && typeof input.memoryFileName !== 'string') || (input.companionFileName !== undefined && typeof input.companionFileName !== 'string'))
             return { exitCode: 2, response: coordinatorError(2, 'Invalid coordinator request') };
         if (!COMPILED_ENGINE_VERSION || !COMPILED_SOURCE_SHA256)
             return { exitCode: 2, response: coordinatorError(2, 'Coordinator build handshake is unavailable') };
@@ -55,7 +55,7 @@ export function runClaudeMdCoordinator(input) {
         const sourceSha256 = createHash('sha256').update(source.bytes).digest('hex');
         if (sourceSha256 !== COMPILED_SOURCE_SHA256 || input.sourceSha256 !== COMPILED_SOURCE_SHA256 || input.sourceVersion !== COMPILED_ENGINE_VERSION)
             return { exitCode: 2, response: coordinatorError(2, 'Canonical source handshake mismatch') };
-        const result = executeClaudeMdTransaction({ mode, root: input.configRoot, source: source.sourcePath, sourceRoot: source.pluginRoot, sourceBytes: source.bytes, version: input.sourceVersion });
+        const result = executeClaudeMdTransaction({ mode, root: input.configRoot, source: source.sourcePath, sourceRoot: source.pluginRoot, sourceBytes: source.bytes, version: input.sourceVersion, memoryFileName: input.memoryFileName, companionFileName: input.companionFileName });
         return { exitCode: result.exitCode, response: result };
     }
     catch (error) {

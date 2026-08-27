@@ -697,7 +697,7 @@ function generatedHeaderRanges(markers) {
 }
 function cleanedExisting(content, importReference = "@CLAUDE-omc.md") {
   const analysis = analyzeLegacyClaudeMd(content);
-  if (analysis.markers.state === "corrupt") throw new Error(`Existing CLAUDE.md has corrupt OMC markers: ${analysis.markers.diagnostics.join(", ")}`);
+  if (analysis.markers.state === "corrupt") throw new Error(`Existing memory file has corrupt OMC markers: ${analysis.markers.diagnostics.join(", ")}`);
   const imports = importRanges(content, importReference).filter((range) => analysis.markers.outsideRanges.some((outside) => range.start >= outside.start && range.end <= outside.end));
   const ranges = [...analysis.markers.managedRanges, ...analysis.exactMatches, ...imports, ...generatedHeaderRanges(analysis.markers)];
   return { content: removeClaudeMdRanges(content, ranges), ranges, variants: analysis.exactMatches.map((match) => match.variantId) };
@@ -917,15 +917,15 @@ function verifiedSource(pluginRootInput, sourceInput) {
 function runClaudeMdCoordinator(input) {
   try {
     if (!isObject(input)) return { exitCode: 2, response: coordinatorError(2, "Request must be an object") };
-    const allowed = /* @__PURE__ */ new Set(["schemaVersion", "engineVersion", "mode", "configRoot", "pluginRoot", "sourcePath", "sourceSha256", "sourceVersion"]);
+    const allowed = /* @__PURE__ */ new Set(["schemaVersion", "engineVersion", "mode", "configRoot", "pluginRoot", "sourcePath", "sourceSha256", "sourceVersion", "memoryFileName", "companionFileName"]);
     if (Object.keys(input).some((key) => !allowed.has(key))) return { exitCode: 2, response: coordinatorError(2, "Unknown request field") };
     const { mode } = input;
-    if (input.schemaVersion !== CLAUDE_MD_COORDINATOR_SCHEMA_VERSION || input.engineVersion !== COMPILED_ENGINE_VERSION || mode !== "local" && mode !== "global-overwrite" && mode !== "global-preserve" || typeof input.configRoot !== "string" || typeof input.pluginRoot !== "string" || typeof input.sourcePath !== "string" || typeof input.sourceSha256 !== "string" || typeof input.sourceVersion !== "string") return { exitCode: 2, response: coordinatorError(2, "Invalid coordinator request") };
+    if (input.schemaVersion !== CLAUDE_MD_COORDINATOR_SCHEMA_VERSION || input.engineVersion !== COMPILED_ENGINE_VERSION || mode !== "local" && mode !== "global-overwrite" && mode !== "global-preserve" || typeof input.configRoot !== "string" || typeof input.pluginRoot !== "string" || typeof input.sourcePath !== "string" || typeof input.sourceSha256 !== "string" || typeof input.sourceVersion !== "string" || input.memoryFileName !== void 0 && typeof input.memoryFileName !== "string" || input.companionFileName !== void 0 && typeof input.companionFileName !== "string") return { exitCode: 2, response: coordinatorError(2, "Invalid coordinator request") };
     if (!COMPILED_ENGINE_VERSION || !COMPILED_SOURCE_SHA256) return { exitCode: 2, response: coordinatorError(2, "Coordinator build handshake is unavailable") };
     const source = verifiedSource(input.pluginRoot, input.sourcePath);
     const sourceSha256 = (0, import_node_crypto2.createHash)("sha256").update(source.bytes).digest("hex");
     if (sourceSha256 !== COMPILED_SOURCE_SHA256 || input.sourceSha256 !== COMPILED_SOURCE_SHA256 || input.sourceVersion !== COMPILED_ENGINE_VERSION) return { exitCode: 2, response: coordinatorError(2, "Canonical source handshake mismatch") };
-    const result = executeClaudeMdTransaction({ mode, root: input.configRoot, source: source.sourcePath, sourceRoot: source.pluginRoot, sourceBytes: source.bytes, version: input.sourceVersion });
+    const result = executeClaudeMdTransaction({ mode, root: input.configRoot, source: source.sourcePath, sourceRoot: source.pluginRoot, sourceBytes: source.bytes, version: input.sourceVersion, memoryFileName: input.memoryFileName, companionFileName: input.companionFileName });
     return { exitCode: result.exitCode, response: result };
   } catch (error) {
     return { exitCode: 3, response: coordinatorError(3, `Coordinator I/O validation failed: ${error instanceof Error ? error.message : String(error)}`) };

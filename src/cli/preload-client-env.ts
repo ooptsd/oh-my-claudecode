@@ -14,7 +14,8 @@
  *   1. Explicit `--client codebuddy` (space or `=` form) presets
  *      CLAUDE_CONFIG_DIR=~/.codebuddy, CLAUDE_MCP_CONFIG_PATH=~/.codebuddy/.mcp.json
  *      and OMC_CLIENT=codebuddy, overriding pre-existing values with a
- *      one-shot stderr warning.
+ *      one-shot stderr warning. Repeated flags are last-wins, matching
+ *      commander's option handling.
  *   2. Explicit `--client claude` sets OMC_CLIENT=claude only (suppresses
  *      auto-detection; user keeps full CLAUDE_CONFIG_DIR semantics).
  *   3. No flag: auto-detect the CodeBuddy session signature
@@ -52,20 +53,24 @@ export interface ClientEnvPreloadPlan {
 const CLIENT_FLAG = '--client';
 const VALID_CLIENTS: readonly PreloadClient[] = ['claude', 'codebuddy'];
 
-/** Extract a valid `--client <name>` / `--client=<name>` value from raw argv. */
+/**
+ * Extract the last valid `--client <name>` / `--client=<name>` value from raw
+ * argv. Repeated flags follow commander's last-wins rule; invalid or missing
+ * values never win, so a lone trailing bogus flag still resolves to undefined.
+ */
 export function parseClientFlagArgv(argv: readonly string[]): PreloadClient | undefined {
+  let flagged: PreloadClient | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === CLIENT_FLAG) {
       const value = argv[index + 1];
-      return VALID_CLIENTS.includes(value as PreloadClient) ? (value as PreloadClient) : undefined;
-    }
-    if (arg.startsWith(`${CLIENT_FLAG}=`)) {
+      if (VALID_CLIENTS.includes(value as PreloadClient)) flagged = value as PreloadClient;
+    } else if (arg.startsWith(`${CLIENT_FLAG}=`)) {
       const value = arg.slice(CLIENT_FLAG.length + 1);
-      return VALID_CLIENTS.includes(value as PreloadClient) ? (value as PreloadClient) : undefined;
+      if (VALID_CLIENTS.includes(value as PreloadClient)) flagged = value as PreloadClient;
     }
   }
-  return undefined;
+  return flagged;
 }
 
 function trimmed(env: NodeJS.ProcessEnv, key: string): string {

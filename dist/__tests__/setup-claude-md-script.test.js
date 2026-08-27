@@ -1304,4 +1304,79 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
         });
     });
 });
+describe('setup-claude-md.sh client-aware memory file names (CodeBuddy)', () => {
+    const CANONICAL = `<!-- OMC:START -->
+<!-- OMC:VERSION:9.9.9 -->
+
+# Canonical CLAUDE
+Use the real docs file.
+<!-- OMC:END -->
+`;
+    /** Replace the fixture coordinator with a stub that captures the REQUEST. */
+    function installCapturingCoordinator(fixture, capturePath) {
+        const sourceSha256 = createHash('sha256').update(CANONICAL).digest('hex');
+        writeFileSync(join(fixture.pluginRoot, 'bridge', 'claude-md-coordinator.cjs'), `const fs = require('node:fs');
+if (process.argv[2] === '--handshake') {
+  process.stdout.write(JSON.stringify({ schemaVersion: 1, engineVersion: '9.9.9', sourceSha256: '${sourceSha256}' }));
+} else {
+  fs.appendFileSync(${JSON.stringify(capturePath)}, fs.readFileSync(0, 'utf8') + '\\n');
+  process.stdout.write(JSON.stringify({ ok: true, exitCode: 0, backups: [], mutatedPaths: [] }));
+}
+`);
+    }
+    it('sends CODEBUDDY.md/CODEBUDDY-omc.md in the coordinator REQUEST for a CodeBuddy session', () => {
+        const fixture = createPluginFixture(CANONICAL);
+        const capturePath = join(fixture.projectRoot, 'captured-request.jsonl');
+        installCapturingCoordinator(fixture, capturePath);
+        const result = spawnSync('bash', [fixture.scriptPath, 'local'], {
+            cwd: fixture.projectRoot,
+            env: {
+                ...process.env,
+                HOME: fixture.homeRoot,
+                CODEBUDDY_PLUGIN_ROOT: '/plugins/omc',
+            },
+            encoding: 'utf-8',
+        });
+        expect(result.status).toBe(0);
+        const request = JSON.parse(readFileSync(capturePath, 'utf-8'));
+        expect(request.memoryFileName).toBe('CODEBUDDY.md');
+        expect(request.companionFileName).toBe('CODEBUDDY-omc.md');
+    });
+    it('keeps the claude defaults in the coordinator REQUEST outside CodeBuddy sessions', () => {
+        const fixture = createPluginFixture(CANONICAL);
+        const capturePath = join(fixture.projectRoot, 'captured-request.jsonl');
+        installCapturingCoordinator(fixture, capturePath);
+        const result = spawnSync('bash', [fixture.scriptPath, 'local'], {
+            cwd: fixture.projectRoot,
+            env: { ...process.env, HOME: fixture.homeRoot },
+            encoding: 'utf-8',
+        });
+        expect(result.status).toBe(0);
+        const request = JSON.parse(readFileSync(capturePath, 'utf-8'));
+        expect(request.memoryFileName).toBe('CLAUDE.md');
+        expect(request.companionFileName).toBe('CLAUDE-omc.md');
+    });
+    it('installs CODEBUDDY.md/CODEBUDDY-omc.md under ~/.codebuddy for a CodeBuddy global preserve run', () => {
+        const fixture = createPluginFixture(CANONICAL);
+        const result = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
+            cwd: fixture.projectRoot,
+            env: {
+                ...process.env,
+                HOME: fixture.homeRoot,
+                CODEBUDDY_PLUGIN_ROOT: '/plugins/omc',
+            },
+            encoding: 'utf-8',
+        });
+        expect(result.status).toBe(0);
+        const configDir = join(fixture.homeRoot, '.codebuddy');
+        const main = readFileSync(join(configDir, 'CODEBUDDY.md'), 'utf-8');
+        const companion = readFileSync(join(configDir, 'CODEBUDDY-omc.md'), 'utf-8');
+        expect(main).toContain('<!-- OMC:IMPORT:START -->');
+        expect(main).toContain('@CODEBUDDY-omc.md');
+        expect(main).toContain('<!-- OMC:IMPORT:END -->');
+        expect(companion).toContain('<!-- OMC:START -->');
+        expect(companion).toContain('<!-- OMC:VERSION:9.9.9 -->');
+        expect(existsSync(join(configDir, 'CLAUDE.md'))).toBe(false);
+    });
+});
 //# sourceMappingURL=setup-claude-md-script.test.js.map

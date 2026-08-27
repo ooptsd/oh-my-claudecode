@@ -5,15 +5,15 @@
   "provenance": {
     "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
     "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-    "head": "416f1f62ebe36797f6b6fafcd197c09c144e206a",
-    "sourceSha256": "8aa479636ec4b13a4cf0ea71f405e4ec17400d64de747480cf1a4737fb30c532",
+    "head": "aca3f59f723672f30757074a26f6731f0b392a2b",
+    "sourceSha256": "9b98f18e1bdbfe51e686329f08217c20388b3cc516902fef8f16530ba1658c49",
     "generatedAt": null,
     "generator": "scripts/generate-inventory-graph.mjs"
   },
   "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
   "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-  "head": "416f1f62ebe36797f6b6fafcd197c09c144e206a",
-  "sourceSha256": "8aa479636ec4b13a4cf0ea71f405e4ec17400d64de747480cf1a4737fb30c532",
+  "head": "aca3f59f723672f30757074a26f6731f0b392a2b",
+  "sourceSha256": "9b98f18e1bdbfe51e686329f08217c20388b3cc516902fef8f16530ba1658c49",
   "counts": {
     "public": {
       "skills": 31,
@@ -28,8 +28,8 @@
       "toolFiles": 56,
       "libFiles": 34,
       "templateHooks": 21,
-      "srcFiles": 1292,
-      "total": 1313
+      "srcFiles": 1293,
+      "total": 1314
     },
     "generated": {
       "distFiles": 5003,
@@ -792,6 +792,7 @@
       "scripts/test-remember-tags.ts",
       "scripts/test-session-injection.ts",
       "scripts/uninstall.sh",
+      "scripts/verify-codebuddy.mjs",
       "scripts/verify-deliverables.mjs",
       "scripts/verify-epic-3698-closure.mjs",
       "scripts/verify-generated-artifact-authorization.mjs",
@@ -33410,6 +33411,11 @@
         "path": "scripts/uninstall.sh"
       },
       {
+        "id": "scripts/verify-codebuddy.mjs",
+        "kind": "script",
+        "path": "scripts/verify-codebuddy.mjs"
+      },
+      {
         "id": "scripts/verify-deliverables.mjs",
         "kind": "script",
         "path": "scripts/verify-deliverables.mjs"
@@ -35483,6 +35489,11 @@
         "id": "src/cli/__tests__/autoresearch.test.ts",
         "kind": "src",
         "path": "src/cli/__tests__/autoresearch.test.ts"
+      },
+      {
+        "id": "src/cli/__tests__/bundle-preload-order.test.ts",
+        "kind": "src",
+        "path": "src/cli/__tests__/bundle-preload-order.test.ts"
       },
       {
         "id": "src/cli/__tests__/cli-boot.test.ts",
@@ -42689,6 +42700,41 @@
       {
         "from": "scripts/test-session-injection.ts",
         "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:child_process",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:crypto",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:fs/promises",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "scripts/verify-codebuddy.mjs",
+        "to": "external:node:url",
         "kind": "imports"
       },
       {
@@ -50159,6 +50205,21 @@
       {
         "from": "src/cli/__tests__/autoresearch.test.ts",
         "to": "src/cli/autoresearch.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/bundle-preload-order.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/bundle-preload-order.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/bundle-preload-order.test.ts",
+        "to": "external:vitest",
         "kind": "imports"
       },
       {
@@ -75488,12 +75549,12 @@
       }
     ],
     "stats": {
-      "nodeCount": 6859,
-      "edgeCount": 6971,
-      "importEdgeCount": 5726,
+      "nodeCount": 6861,
+      "edgeCount": 6981,
+      "importEdgeCount": 5736,
       "registerEdgeCount": 52
     }
   },
-  "inventorySha256": "2296e87295b89cbe58190b4ef071b1f9c2fe2eab9beafd856bc9358e1e8449cf",
-  "manifestSha256": "581c53b6d01d0d6bb3ef8e763d7462c41ce9361aba79a6f6faa8acb1de5be8a1"
+  "inventorySha256": "93498e70f572fbb94a8d028c3149bb99613c60dbcc4a8713f724630644b2f6ac",
+  "manifestSha256": "7d7af8cc3bc1350de2e1ec772978e6f73b748e95560dfe9e857593ddb7fd3b52"
 }
