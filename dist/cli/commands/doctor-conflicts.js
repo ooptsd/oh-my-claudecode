@@ -5,6 +5,7 @@
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'fs';
 import { basename, dirname, join } from 'path';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import { getMemoryCompanionFileName, getMemoryFileName } from '../../utils/memory-file.js';
 import { isOmcHook } from '../../installer/index.js';
 import { analyzeLegacyClaudeMd, decodeClaudeMdUtf8 } from '../../installer/claude-md-analysis.js';
 import { colors } from '../utils/formatting.js';
@@ -221,8 +222,12 @@ function inspectClaudeMdFile(filePath, configDir, isMain) {
 }
 function genericClaudeMdFiles(configDir) {
     try {
+        // Exclude the active companion under both names: the historical
+        // 'claude-omc.md' literal plus the client-specific companion (identical
+        // in claude sessions, 'codebuddy-omc.md' in CodeBuddy sessions).
+        const companionName = getMemoryCompanionFileName().toLowerCase();
         return readdirSync(configDir)
-            .filter(name => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== 'claude-omc.md')
+            .filter(name => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== 'claude-omc.md' && name.toLowerCase() !== companionName)
             .sort()
             .map(name => join(configDir, name));
     }
@@ -233,8 +238,10 @@ function genericClaudeMdFiles(configDir) {
 /** Analyze main and companion CLAUDE files without following symlinks. */
 export function checkClaudeMdStatus() {
     const configDir = getClaudeConfigDir();
-    const claudeMdPath = join(configDir, 'CLAUDE.md');
-    const activePath = join(configDir, 'CLAUDE-omc.md');
+    // Client-aware memory file names (CODEBUDDY.md/CODEBUDDY-omc.md in a
+    // CodeBuddy session) so doctor never reports false conflicts there.
+    const claudeMdPath = join(configDir, getMemoryFileName());
+    const activePath = join(configDir, getMemoryCompanionFileName());
     const genericPaths = genericClaudeMdFiles(configDir);
     const mainExists = pathExistsWithoutFollowingSymlinks(claudeMdPath);
     if (!mainExists && !pathExistsWithoutFollowingSymlinks(activePath) && genericPaths.length === 0)

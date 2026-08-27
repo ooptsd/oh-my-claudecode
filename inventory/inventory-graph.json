@@ -5,15 +5,15 @@
   "provenance": {
     "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
     "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-    "head": "08db8be068c2d5e12c061958952715555dc6d1b0",
-    "sourceSha256": "037aa1c2472a0c8be47dd11e6ad28aba20d5d806848cbfe811185dbc7b85fa36",
+    "head": "416f1f62ebe36797f6b6fafcd197c09c144e206a",
+    "sourceSha256": "8aa479636ec4b13a4cf0ea71f405e4ec17400d64de747480cf1a4737fb30c532",
     "generatedAt": null,
     "generator": "scripts/generate-inventory-graph.mjs"
   },
   "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
   "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-  "head": "08db8be068c2d5e12c061958952715555dc6d1b0",
-  "sourceSha256": "037aa1c2472a0c8be47dd11e6ad28aba20d5d806848cbfe811185dbc7b85fa36",
+  "head": "416f1f62ebe36797f6b6fafcd197c09c144e206a",
+  "sourceSha256": "8aa479636ec4b13a4cf0ea71f405e4ec17400d64de747480cf1a4737fb30c532",
   "counts": {
     "public": {
       "skills": 31,
@@ -28,8 +28,8 @@
       "toolFiles": 56,
       "libFiles": 34,
       "templateHooks": 21,
-      "srcFiles": 1284,
-      "total": 1305
+      "srcFiles": 1292,
+      "total": 1313
     },
     "generated": {
       "distFiles": 5003,
@@ -35490,6 +35490,11 @@
         "path": "src/cli/__tests__/cli-boot.test.ts"
       },
       {
+        "id": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "kind": "src",
+        "path": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts"
+      },
+      {
         "id": "src/cli/__tests__/doctor-plugin-dir.test.ts",
         "kind": "src",
         "path": "src/cli/__tests__/doctor-plugin-dir.test.ts"
@@ -35515,6 +35520,11 @@
         "path": "src/cli/__tests__/plugin-dir-capture.test.ts"
       },
       {
+        "id": "src/cli/__tests__/preload-client-env.test.ts",
+        "kind": "src",
+        "path": "src/cli/__tests__/preload-client-env.test.ts"
+      },
+      {
         "id": "src/cli/__tests__/self-improve-paths.test.ts",
         "kind": "src",
         "path": "src/cli/__tests__/self-improve-paths.test.ts"
@@ -35528,6 +35538,11 @@
         "id": "src/cli/__tests__/session-search.test.ts",
         "kind": "src",
         "path": "src/cli/__tests__/session-search.test.ts"
+      },
+      {
+        "id": "src/cli/__tests__/setup-client-option.test.ts",
+        "kind": "src",
+        "path": "src/cli/__tests__/setup-client-option.test.ts"
       },
       {
         "id": "src/cli/__tests__/setup-command-precedence.test.ts",
@@ -35718,6 +35733,11 @@
         "id": "src/cli/launch.ts",
         "kind": "src",
         "path": "src/cli/launch.ts"
+      },
+      {
+        "id": "src/cli/preload-client-env.ts",
+        "kind": "src",
+        "path": "src/cli/preload-client-env.ts"
       },
       {
         "id": "src/cli/team.ts",
@@ -37990,9 +38010,19 @@
         "path": "src/installer/__tests__/claude-md-target-resolution.test.ts"
       },
       {
+        "id": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "kind": "src",
+        "path": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts"
+      },
+      {
         "id": "src/installer/__tests__/claude-md-transaction.test.ts",
         "kind": "src",
         "path": "src/installer/__tests__/claude-md-transaction.test.ts"
+      },
+      {
+        "id": "src/installer/__tests__/client-config-guard.test.ts",
+        "kind": "src",
+        "path": "src/installer/__tests__/client-config-guard.test.ts"
       },
       {
         "id": "src/installer/__tests__/fixtures/historical-agents/architect.md",
@@ -40155,6 +40185,11 @@
         "path": "src/utils/__tests__/jsonc.test.ts"
       },
       {
+        "id": "src/utils/__tests__/memory-file.test.ts",
+        "kind": "src",
+        "path": "src/utils/__tests__/memory-file.test.ts"
+      },
+      {
         "id": "src/utils/__tests__/paths.test.ts",
         "kind": "src",
         "path": "src/utils/__tests__/paths.test.ts"
@@ -40198,6 +40233,11 @@
         "id": "src/utils/jsonc.ts",
         "kind": "src",
         "path": "src/utils/jsonc.ts"
+      },
+      {
+        "id": "src/utils/memory-file.ts",
+        "kind": "src",
+        "path": "src/utils/memory-file.ts"
       },
       {
         "id": "src/utils/omc-cli-rendering.ts",
@@ -50147,6 +50187,36 @@
         "kind": "imports"
       },
       {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "src/cli/commands/doctor-conflicts.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/doctor-conflicts-memory-file.test.ts",
+        "to": "src/installer/claude-md-analysis.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/cli/__tests__/doctor-plugin-dir.test.ts",
         "to": "external:path",
         "kind": "imports"
@@ -50257,6 +50327,31 @@
         "kind": "imports"
       },
       {
+        "from": "src/cli/__tests__/preload-client-env.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/preload-client-env.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/preload-client-env.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/preload-client-env.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/preload-client-env.test.ts",
+        "to": "src/cli/preload-client-env.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/cli/__tests__/self-improve-paths.test.ts",
         "to": "external:node:child_process",
         "kind": "imports"
@@ -50334,6 +50429,16 @@
       {
         "from": "src/cli/__tests__/session-search.test.ts",
         "to": "src/utils/encode-project-path.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/setup-client-option.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/setup-client-option.test.ts",
+        "to": "src/cli/index.ts",
         "kind": "imports"
       },
       {
@@ -51002,6 +51107,11 @@
         "kind": "imports"
       },
       {
+        "from": "src/cli/commands/doctor-conflicts.ts",
+        "to": "src/utils/memory-file.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/cli/commands/doctor-team-routing.ts",
         "to": "src/cli/utils/formatting.ts",
         "kind": "imports"
@@ -51358,6 +51468,11 @@
       },
       {
         "from": "src/cli/index.ts",
+        "to": "src/cli/preload-client-env.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/index.ts",
         "to": "src/cli/win32-warning.ts",
         "kind": "imports"
       },
@@ -51499,6 +51614,26 @@
       {
         "from": "src/cli/launch.ts",
         "to": "src/utils/config-dir.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/launch.ts",
+        "to": "src/utils/memory-file.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/preload-client-env.ts",
+        "to": "external:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/preload-client-env.ts",
+        "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/preload-client-env.ts",
+        "to": "src/utils/client.ts",
         "kind": "imports"
       },
       {
@@ -62292,6 +62427,31 @@
         "kind": "imports"
       },
       {
+        "from": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/claude-md-transaction-memory-file.test.ts",
+        "to": "src/installer/claude-md-transaction.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/installer/__tests__/claude-md-transaction.test.ts",
         "to": "external:node:child_process",
         "kind": "imports"
@@ -62340,6 +62500,31 @@
         "from": "src/installer/__tests__/claude-md-transaction.test.ts",
         "to": "src/installer/claude-md-transaction.ts",
         "kind": "type-imports"
+      },
+      {
+        "from": "src/installer/__tests__/client-config-guard.test.ts",
+        "to": "external:node:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/client-config-guard.test.ts",
+        "to": "external:node:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/client-config-guard.test.ts",
+        "to": "external:node:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/client-config-guard.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/__tests__/client-config-guard.test.ts",
+        "to": "src/installer/index.ts",
+        "kind": "imports"
       },
       {
         "from": "src/installer/__tests__/has-enabled-omc-plugin.test.ts",
@@ -62908,12 +63093,22 @@
       },
       {
         "from": "src/installer/index.ts",
+        "to": "src/utils/client.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/index.ts",
         "to": "src/utils/config-dir.ts",
         "kind": "imports"
       },
       {
         "from": "src/installer/index.ts",
         "to": "src/utils/frontmatter.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/installer/index.ts",
+        "to": "src/utils/memory-file.ts",
         "kind": "imports"
       },
       {
@@ -73962,6 +74157,16 @@
         "kind": "imports"
       },
       {
+        "from": "src/utils/__tests__/memory-file.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/__tests__/memory-file.test.ts",
+        "to": "src/utils/memory-file.ts",
+        "kind": "imports"
+      },
+      {
         "from": "src/utils/__tests__/paths.test.ts",
         "to": "external:vitest",
         "kind": "imports"
@@ -74034,6 +74239,11 @@
       {
         "from": "src/utils/daemon-module-path.ts",
         "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/utils/memory-file.ts",
+        "to": "src/utils/client.ts",
         "kind": "imports"
       },
       {
@@ -75278,12 +75488,12 @@
       }
     ],
     "stats": {
-      "nodeCount": 6851,
-      "edgeCount": 6937,
-      "importEdgeCount": 5692,
+      "nodeCount": 6859,
+      "edgeCount": 6971,
+      "importEdgeCount": 5726,
       "registerEdgeCount": 52
     }
   },
-  "inventorySha256": "a6cec8726304549389ba000933eac04fbbe931cdb618722a244cf4c5ff1de758",
-  "manifestSha256": "9e1db685c472bb6e45d49b2e316632ee9adf1142a8e654ac6d9aee384563e0d7"
+  "inventorySha256": "2296e87295b89cbe58190b4ef071b1f9c2fe2eab9beafd856bc9358e1e8449cf",
+  "manifestSha256": "581c53b6d01d0d6bb3ef8e763d7462c41ce9361aba79a6f6faa8acb1de5be8a1"
 }

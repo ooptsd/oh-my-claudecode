@@ -9,7 +9,13 @@
  * - config: Show or edit configuration
  * - setup: Sync all OMC components (hooks, agents, skills)
  */
-import { Command } from 'commander';
+// MUST stay the first import: presets CLAUDE_CONFIG_DIR/CLAUDE_MCP_CONFIG_PATH/
+// OMC_CLIENT for `--client codebuddy` (or a detected CodeBuddy session) BEFORE
+// the statically-imported installer freezes its config-dir constants. The
+// esbuild bundle (bridge/cli.cjs) preserves import order, so this side effect
+// runs before any installer module body. Do not move below other imports.
+import './preload-client-env.js';
+import { Command, Option } from 'commander';
 import chalk from 'chalk';
 import { join } from 'path';
 import { writeFileSync, existsSync } from 'fs';
@@ -1181,6 +1187,8 @@ program
     .option('--plugin-dir-mode', 'Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)')
     .option('--skip-hooks', 'Skip hook installation')
     .option('--force-hooks', 'Force reinstall hooks even if unchanged')
+    .addOption(new Option('--client <client>', 'Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy; default: auto-detect the current session)')
+    .choices(['claude', 'codebuddy']))
     .addHelpText('after', `
 Examples:
   $ omc setup                     Sync all OMC components
@@ -1189,7 +1197,13 @@ Examples:
   $ omc setup --plugin-dir-mode   Skip agent/skill copy (used with claude --plugin-dir)
   $ omc setup --quiet             Silent setup for scripts
   $ omc setup --skip-hooks        Install without hooks
-  $ omc setup --force-hooks       Force reinstall hooks`)
+  $ omc setup --force-hooks       Force reinstall hooks
+  $ omc setup --client codebuddy  Install user-level state into ~/.codebuddy
+
+Client targeting:
+  --client claude|codebuddy is optional — without it the session is
+  auto-detected (CodeBuddy sessions install into ~/.codebuddy with
+  CODEBUDDY.md as the memory file; everything else keeps ~/.claude).`)
     .action(async (options) => {
     if (!options.quiet) {
         console.log(chalk.blue('Oh-My-ClaudeCode Setup\n'));

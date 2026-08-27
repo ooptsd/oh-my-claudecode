@@ -25,6 +25,7 @@ import { lockPathFor, withFileLockSync } from '../lib/file-lock.js';
 import { resolvePluginDirArg } from '../lib/plugin-dir.js';
 import { stripRetiredTeamMcpServers } from '../installer/mcp-registry.js';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { getMemoryCompanionFileName } from '../utils/memory-file.js';
 import {
   resolveLaunchPolicy,
   buildTmuxSessionName,
@@ -503,7 +504,11 @@ function swapRuntimeConfigDir(runtimeConfigDir: string, nextConfigDir: string): 
 }
 
 export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()): string {
-  const companionPath = join(baseConfigDir, 'CLAUDE-omc.md');
+  // Client-aware companion detection: in a CodeBuddy session the companion
+  // lives at <configDir>/CODEBUDDY-omc.md. The runtime projection below is
+  // copied back to 'CLAUDE.md' on purpose — it is consumed by the launched
+  // Claude Code process, regardless of which client owns the source config.
+  const companionPath = join(baseConfigDir, getMemoryCompanionFileName());
   if (!hasOmcMarkers(companionPath)) {
     return baseConfigDir;
   }
