@@ -155,6 +155,38 @@ describe('resolvePreloadPlan', () => {
   });
 });
 
+describe('parseClientFlagArgv last-wins (matches commander)', () => {
+  it('takes the last valid value for repeated space-form flags', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['--client', 'claude', '--client', 'codebuddy'])).toBe('codebuddy');
+  });
+
+  it('takes the last valid value for repeated equals-form flags', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['--client=claude', '--client=codebuddy'])).toBe('codebuddy');
+  });
+
+  it('keeps the earlier valid value when a repeated flag trails without a value', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['--client', 'claude', '--client'])).toBe('claude');
+  });
+
+  it('keeps the earlier valid value when a repeated flag trails with an invalid value', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['--client', 'claude', '--client', 'zcode'])).toBe('claude');
+  });
+
+  it('still yields undefined for a lone flagless --client', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['setup', '--client'])).toBeUndefined();
+  });
+
+  it('still yields undefined for a lone invalid --client value', async () => {
+    const { parseClientFlagArgv } = await loadPreload();
+    expect(parseClientFlagArgv(['setup', '--client', 'zcode'])).toBeUndefined();
+  });
+});
+
 describe('applyPreloadPlan', () => {
   it('mutates env and emits one stderr write for warnings', async () => {
     const { resolvePreloadPlan, applyPreloadPlan } = await loadPreload();

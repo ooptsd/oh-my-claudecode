@@ -493,6 +493,12 @@ describe('doctor-conflicts: CLAUDE.md companion file detection (issue #1101)', (
         expect(status.hasMarkers).toBe(false);
         expect(status.companionFile).toBe(join(TEST_CLAUDE_DIR, 'CLAUDE-omc.md'));
     });
+    it('detects CODEBUDDY-prefixed direct references like CLAUDE-prefixed ones', () => {
+        writeFileSync(join(TEST_CLAUDE_DIR, 'CLAUDE.md'), 'notes\n@CODEBUDDY-omc.md\n');
+        const status = checkClaudeMdStatus();
+        expect(status).not.toBeNull();
+        expect(status.companionFile).toBe(join(TEST_CLAUDE_DIR, 'CODEBUDDY-omc.md'));
+    });
     it('prefers main file markers over companion file', () => {
         writeFileSync(join(TEST_CLAUDE_DIR, 'CLAUDE.md'), '<!-- OMC:START -->\n# OMC\n<!-- OMC:END -->\n');
         writeFileSync(join(TEST_CLAUDE_DIR, 'CLAUDE-omc.md'), '<!-- OMC:START -->\n# Also OMC\n<!-- OMC:END -->\n');

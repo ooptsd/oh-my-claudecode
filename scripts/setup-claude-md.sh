@@ -240,10 +240,26 @@ NODE
 fi
 mkdir -p "$CONFIG_ROOT"
 
-REQUEST=$(node - "$HANDSHAKE" "$COORDINATOR_MODE" "$CONFIG_ROOT" "$ACTIVE_PLUGIN_ROOT" "$CANONICAL_CLAUDE_MD" <<'NODE'
-const [handshakeJson, mode, configRoot, pluginRoot, sourcePath] = process.argv.slice(2);
+# Client-aware memory file names (mirrors the detection priority implemented by
+# resolve_claude_config_dir in lib/config-dir.sh and src/utils/client.ts):
+# CodeBuddy sessions install CODEBUDDY.md/CODEBUDDY-omc.md; every other client
+# keeps the historical CLAUDE.md/CLAUDE-omc.md pair (the coordinator defaults).
+if [ "${OMC_CLIENT:-}" = "codebuddy" ] ||
+  { [ "${OMC_CLIENT:-}" != "claude" ] &&
+    { [ -n "${CODEBUDDY_PLUGIN_ROOT:-}" ] ||
+      [ -n "${CODEBUDDY_PLUGIN_DIRS:-}" ] ||
+      [ -n "${CODEBUDDY_PLUGIN_DATA:-}" ]; }; }; then
+  MEMORY_FILE_NAME="CODEBUDDY.md"
+  COMPANION_FILE_NAME="CODEBUDDY-omc.md"
+else
+  MEMORY_FILE_NAME="CLAUDE.md"
+  COMPANION_FILE_NAME="CLAUDE-omc.md"
+fi
+
+REQUEST=$(node - "$HANDSHAKE" "$COORDINATOR_MODE" "$CONFIG_ROOT" "$ACTIVE_PLUGIN_ROOT" "$CANONICAL_CLAUDE_MD" "$MEMORY_FILE_NAME" "$COMPANION_FILE_NAME" <<'NODE'
+const [handshakeJson, mode, configRoot, pluginRoot, sourcePath, memoryFileName, companionFileName] = process.argv.slice(2);
 const handshake = JSON.parse(handshakeJson);
-process.stdout.write(JSON.stringify({ schemaVersion: 1, engineVersion: handshake.engineVersion, mode, configRoot, pluginRoot, sourcePath, sourceSha256: handshake.sourceSha256, sourceVersion: handshake.engineVersion }));
+process.stdout.write(JSON.stringify({ schemaVersion: 1, engineVersion: handshake.engineVersion, mode, configRoot, pluginRoot, sourcePath, sourceSha256: handshake.sourceSha256, sourceVersion: handshake.engineVersion, memoryFileName, companionFileName }));
 NODE
 )
 

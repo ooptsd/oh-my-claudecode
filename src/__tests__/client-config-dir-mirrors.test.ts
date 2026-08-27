@@ -81,6 +81,16 @@ const ENV_MATRIX: MatrixCase[] = [
     env: { CODEBUDDY_PROJECT_DIR: '/proj', CODEBUDDY_SERVICE_PROXY_URL: 'http://proxy' },
     expected: '~/.claude',
   },
+  {
+    name: 'CLAUDE_CONFIG_DIR filesystem root is preserved',
+    env: { CLAUDE_CONFIG_DIR: '/' },
+    expected: '/',
+  },
+  {
+    name: 'CLAUDE_CONFIG_DIR double trailing separators are stripped',
+    env: { CLAUDE_CONFIG_DIR: '/opt/omc-cc//' },
+    expected: '/opt/omc-cc',
+  },
 ];
 
 function expandExpected(expected: string, fakeHome: string): string {
@@ -161,6 +171,128 @@ describe('client config-dir mirrors agree on identical inputs', () => {
     expect(readFileSync(CONFIG_DIR_MJS, 'utf-8')).toBe(
       readFileSync(join(REPO_ROOT, 'templates', 'hooks', 'lib', 'config-dir.mjs'), 'utf-8'),
     );
+  });
+});
+
+describe('dirty trailing-separator values resolve byte-identically across mirrors', () => {
+  let fakeHome: string;
+  const originalHome = process.env.HOME;
+
+  beforeEach(() => {
+    fakeHome = mkdtempSync(join(tmpdir(), 'omc-mirrors-dirty-home-'));
+    process.env.HOME = fakeHome;
+  });
+
+  afterEach(() => {
+    rmSync(fakeHome, { recursive: true, force: true });
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+  });
+
+  /** Raw sh output: strip only the trailing newline, no normalize/trim. */
+  function runShHelperRaw(fakeHomeDir: string, matrixEnv: Record<string, string>): string {
+    const output = execFileSync('bash', ['-c', `. ${JSON.stringify(CONFIG_DIR_SH)}; resolve_claude_config_dir`], {
+      encoding: 'utf-8',
+      env: childEnv(fakeHomeDir, matrixEnv),
+    });
+    return output.replace(/\n$/, '');
+  }
+
+  it.each([
+    { name: 'filesystem root', value: '/' },
+    { name: 'double slash root', value: '//' },
+    { name: 'triple slash root', value: '///' },
+    { name: 'dirty double trailing separator', value: '/opt/omc-dirty//' },
+    { name: 'dirty triple trailing separator', value: '/opt/omc-dirty///' },
+    { name: 'tilde form with trailing separator', value: '~/alt//' },
+  ])('$name', (dirty) => {
+    const env = { CLAUDE_CONFIG_DIR: dirty.value };
+    const expected = resolveClientConfigDir(env);
+    // Normalization-free comparisons: a mirror that leaves a stray separator
+    // (or collapses the root to an empty string) must fail here even when
+    // path.normalize would have masked it.
+    expect(runMjsHelper(CONFIG_DIR_MJS, fakeHome, env)).toBe(expected);
+    expect(runCjsHelper(fakeHome, env)).toBe(expected);
+    expect(runShHelperRaw(fakeHome, env)).toBe(expected);
+    // Sanity: the TS answer itself keeps the root a root.
+    if (dirty.value === '/' || dirty.value === '//' || dirty.value === '///') {
+      expect(expected).toBe('/');
+    }
+  });
+});
+
+describe('known capability boundary of the sh mirror (documented limits)', () => {
+  let fakeHome: string;
+  const originalHome = process.env.HOME;
+
+  beforeEach(() => {
+    fakeHome = mkdtempSync(join(tmpdir(), 'omc-mirrors-boundary-home-'));
+    process.env.HOME = fakeHome;
+  });
+
+  afterEach(() => {
+    rmSync(fakeHome, { recursive: true, force: true });
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+  });
+
+  function runShHelperRaw(fakeHomeDir: string, matrixEnv: Record<string, string>): string {
+    const output = execFileSync('bash', ['-c', `. ${JSON.stringify(CONFIG_DIR_SH)}; resolve_claude_config_dir`], {
+      encoding: 'utf-8',
+      env: childEnv(fakeHomeDir, matrixEnv),
+    });
+    return output.replace(/\n$/, '');
+  }
+
+  it('quoted values keep their quotes in every mirror (nobody unquotes)', () => {
+    const env = { CLAUDE_CONFIG_DIR: '"/opt/omc-quoted"' };
+    const expected = resolveClientConfigDir(env);
+    expect(expected).toBe('"/opt/omc-quoted"');
+    expect(runMjsHelper(CONFIG_DIR_MJS, fakeHome, env)).toBe(expected);
+    expect(runCjsHelper(fakeHome, env)).toBe(expected);
+    expect(runShHelperRaw(fakeHome, env)).toBe(expected);
+  });
+
+  it('TS/mjs/cjs trim whitespace; the sh mirror documents no-trim as its boundary', () => {
+    const env = { CLAUDE_CONFIG_DIR: '  /opt/omc-ws  ' };
+    const expected = resolveClientConfigDir(env);
+    expect(expected).toBe('/opt/omc-ws');
+    expect(runMjsHelper(CONFIG_DIR_MJS, fakeHome, env)).toBe(expected);
+    expect(runCjsHelper(fakeHome, env)).toBe(expected);
+    // config-dir.sh header: "plain existence checks only — values must be
+    // clean (no leading/trailing whitespace)". Pin that boundary so any
+    // future drift (in either direction) is a conscious change.
+    expect(runShHelperRaw(fakeHome, env)).toBe('  /opt/omc-ws  ');
+  });
+
+  it('TS/mjs/cjs trim OMC_CLIENT; the sh mirror requires exact lowercase (documented boundary)', () => {
+    const env = { OMC_CLIENT: ' codebuddy ' };
+    const codebuddyDir = normalize(join(fakeHome, '.codebuddy'));
+    const claudeDir = normalize(join(fakeHome, '.claude'));
+    expect(resolveClientConfigDir(env)).toBe(codebuddyDir);
+    expect(runMjsHelper(CONFIG_DIR_MJS, fakeHome, env)).toBe(codebuddyDir);
+    expect(runCjsHelper(fakeHome, env)).toBe(codebuddyDir);
+    // config-dir.sh header: "OMC_CLIENT must be exact lowercase" — the
+    // whitespace-wrapped value is not recognized there, so the session stays
+    // claude. Boundary pinned as-is.
+    expect(runShHelperRaw(fakeHome, env)).toBe(claudeDir);
+  });
+
+  it('OMC_CLIENT case variants are ignored by every mirror (consistent)', () => {
+    for (const variant of ['CodeBuddy', 'CODEBUDDY', 'Claude']) {
+      const env = { OMC_CLIENT: variant };
+      const expected = resolveClientConfigDir(env);
+      expect(expected).toBe(normalize(join(fakeHome, '.claude')));
+      expect(runMjsHelper(CONFIG_DIR_MJS, fakeHome, env)).toBe(expected);
+      expect(runCjsHelper(fakeHome, env)).toBe(expected);
+      expect(runShHelperRaw(fakeHome, env)).toBe(expected);
+    }
   });
 });
 

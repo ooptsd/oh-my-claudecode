@@ -210,7 +210,10 @@ function hasOutsideUserContent(
 function directClaudeMdReferences(content: string, configDir: string): string[] {
   const references = new Set<string>();
   for (const line of content.split(/\r?\n/)) {
-    if (/^@CLAUDE-[A-Za-z0-9][A-Za-z0-9_-]*\.md$/i.test(line)) {
+    // Both client vocabularies: @CLAUDE-*.md (claude/ZCode) and
+    // @CODEBUDDY-*.md (CodeBuddy main memory files reference their
+    // CODEBUDDY-omc.md companion the same way).
+    if (/^@(CLAUDE|CODEBUDDY)-[A-Za-z0-9][A-Za-z0-9_-]*\.md$/i.test(line)) {
       references.add(join(configDir, line.slice(1)));
     }
   }
@@ -288,12 +291,11 @@ function inspectClaudeMdFile(filePath: string, configDir: string, isMain: boolea
 
 function genericClaudeMdFiles(configDir: string): string[] {
   try {
-    // Exclude the active companion under both names: the historical
-    // 'claude-omc.md' literal plus the client-specific companion (identical
-    // in claude sessions, 'codebuddy-omc.md' in CodeBuddy sessions).
-    const companionName = getMemoryCompanionFileName().toLowerCase();
+    // Exclude the historical 'claude-omc.md' literal. The client-specific
+    // companion never matches the CLAUDE-*.md glob ('codebuddy-omc.md' in
+    // CodeBuddy sessions), so no second exclusion is needed here.
     return readdirSync(configDir)
-      .filter(name => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== 'claude-omc.md' && name.toLowerCase() !== companionName)
+      .filter(name => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== 'claude-omc.md')
       .sort()
       .map(name => join(configDir, name));
   } catch {

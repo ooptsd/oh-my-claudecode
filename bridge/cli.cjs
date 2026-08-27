@@ -17349,7 +17349,7 @@ function generatedHeaderRanges(markers) {
 }
 function cleanedExisting(content, importReference = "@CLAUDE-omc.md") {
   const analysis = analyzeLegacyClaudeMd(content);
-  if (analysis.markers.state === "corrupt") throw new Error(`Existing CLAUDE.md has corrupt OMC markers: ${analysis.markers.diagnostics.join(", ")}`);
+  if (analysis.markers.state === "corrupt") throw new Error(`Existing memory file has corrupt OMC markers: ${analysis.markers.diagnostics.join(", ")}`);
   const imports = importRanges(content, importReference).filter((range) => analysis.markers.outsideRanges.some((outside) => range.start >= outside.start && range.end <= outside.end));
   const ranges = [...analysis.markers.managedRanges, ...analysis.exactMatches, ...imports, ...generatedHeaderRanges(analysis.markers)];
   return { content: removeClaudeMdRanges(content, ranges), ranges, variants: analysis.exactMatches.map((match) => match.variantId) };
@@ -19527,8 +19527,8 @@ function install(options = {}) {
         companionFileName: getMemoryCompanionFileName()
       });
       if (!transaction.ok) throw new Error(transaction.error ?? "CLAUDE.md transaction failed");
-      for (const backupPath of transaction.backups) log3(`Backed up existing CLAUDE.md to ${backupPath}`);
-      log3(transaction.operations.some((operation) => operation.type === "write" && operation.existedBefore && (0, import_path62.basename)(operation.path) === memoryFileName) ? "Updated CLAUDE.md (merged with existing content)" : "Created CLAUDE.md");
+      for (const backupPath of transaction.backups) log3(`Backed up existing ${memoryFileName} to ${backupPath}`);
+      log3(transaction.operations.some((operation) => operation.type === "write" && operation.existedBefore && (0, import_path62.basename)(operation.path) === memoryFileName) ? `Updated ${memoryFileName} (merged with existing content)` : `Created ${memoryFileName}`);
     }
     let hudScriptPath = null;
     const hudDisabledByOption = options.skipHud === true;
@@ -63365,18 +63365,18 @@ init_client();
 var CLIENT_FLAG = "--client";
 var VALID_CLIENTS = ["claude", "codebuddy"];
 function parseClientFlagArgv(argv) {
+  let flagged;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === CLIENT_FLAG) {
       const value = argv[index + 1];
-      return VALID_CLIENTS.includes(value) ? value : void 0;
-    }
-    if (arg.startsWith(`${CLIENT_FLAG}=`)) {
+      if (VALID_CLIENTS.includes(value)) flagged = value;
+    } else if (arg.startsWith(`${CLIENT_FLAG}=`)) {
       const value = arg.slice(CLIENT_FLAG.length + 1);
-      return VALID_CLIENTS.includes(value) ? value : void 0;
+      if (VALID_CLIENTS.includes(value)) flagged = value;
     }
   }
-  return void 0;
+  return flagged;
 }
 function trimmed(env2, key) {
   const value = env2[key];
@@ -107189,7 +107189,7 @@ function hasOutsideUserContent(content, outsideRanges2, excludedRanges = []) {
 function directClaudeMdReferences(content, configDir) {
   const references = /* @__PURE__ */ new Set();
   for (const line of content.split(/\r?\n/)) {
-    if (/^@CLAUDE-[A-Za-z0-9][A-Za-z0-9_-]*\.md$/i.test(line)) {
+    if (/^@(CLAUDE|CODEBUDDY)-[A-Za-z0-9][A-Za-z0-9_-]*\.md$/i.test(line)) {
       references.add((0, import_path142.join)(configDir, line.slice(1)));
     }
   }
@@ -107259,8 +107259,7 @@ function inspectClaudeMdFile(filePath, configDir, isMain) {
 }
 function genericClaudeMdFiles(configDir) {
   try {
-    const companionName = getMemoryCompanionFileName().toLowerCase();
-    return (0, import_fs120.readdirSync)(configDir).filter((name) => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== "claude-omc.md" && name.toLowerCase() !== companionName).sort().map((name) => (0, import_path142.join)(configDir, name));
+    return (0, import_fs120.readdirSync)(configDir).filter((name) => /^CLAUDE-.+\.md$/i.test(name) && name.toLowerCase() !== "claude-omc.md").sort().map((name) => (0, import_path142.join)(configDir, name));
   } catch {
     return [];
   }

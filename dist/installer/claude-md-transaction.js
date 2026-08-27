@@ -115,7 +115,7 @@ function generatedHeaderRanges(markers) {
 function cleanedExisting(content, importReference = '@CLAUDE-omc.md') {
     const analysis = analyzeLegacyClaudeMd(content);
     if (analysis.markers.state === 'corrupt')
-        throw new Error(`Existing CLAUDE.md has corrupt OMC markers: ${analysis.markers.diagnostics.join(', ')}`);
+        throw new Error(`Existing memory file has corrupt OMC markers: ${analysis.markers.diagnostics.join(', ')}`);
     const imports = importRanges(content, importReference).filter(range => analysis.markers.outsideRanges.some(outside => range.start >= outside.start && range.end <= outside.end));
     const ranges = [...analysis.markers.managedRanges, ...analysis.exactMatches, ...imports, ...generatedHeaderRanges(analysis.markers)];
     return { content: removeClaudeMdRanges(content, ranges), ranges, variants: analysis.exactMatches.map(match => match.variantId) };
