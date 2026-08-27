@@ -12,6 +12,13 @@ export declare const RULES_INJECTOR_STORAGE: string;
 export declare const PROJECT_MARKERS: string[];
 /** Subdirectories to search for rules within projects */
 export declare const PROJECT_RULE_SUBDIRS: [string, string][];
+/**
+ * Session-aware project rule subdirectories. Identical to
+ * PROJECT_RULE_SUBDIRS except that CodeBuddy sessions swap the `.claude/rules`
+ * entry for `.codebuddy/rules`: CodeBuddy never reads `.claude/` project
+ * state, so rule discovery must not cross-read it either.
+ */
+export declare function getProjectRuleSubdirs(): [string, string][];
 /** Single-file rules that always apply */
 export declare const PROJECT_RULE_FILES: string[];
 /** Pattern for GitHub instructions files */

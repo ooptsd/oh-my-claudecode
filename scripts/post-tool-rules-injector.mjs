@@ -4,7 +4,8 @@
  * PostToolUse Hook: Rules Injector (issue #2577 bug 2)
  *
  * Injects relevant rule files (.claude/rules, .github/instructions,
- * .cursor/rules, ~/.claude/rules) into context when Claude accesses files.
+ * .cursor/rules, ~/.claude/rules — .codebuddy/ variants in CodeBuddy
+ * sessions) into context when Claude accesses files.
  *
  * Uses content-hash + realpath dedup (via rules-injector storage) so the same
  * rule is never injected more than once per session regardless of how many

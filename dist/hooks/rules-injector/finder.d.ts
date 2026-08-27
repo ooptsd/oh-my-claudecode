@@ -1,7 +1,8 @@
 /**
  * Rules Finder
  *
- * Finds rule files in project directories and [$CLAUDE_CONFIG_DIR|~/.claude].
+ * Finds rule files in project directories and the session config dir
+ * ([$CLAUDE_CONFIG_DIR|~/.claude]; ~/.codebuddy in CodeBuddy sessions).
  *
  * Ported from oh-my-opencode's rules-injector hook.
  */
@@ -18,7 +19,8 @@ export declare function calculateDistance(rulePath: string, currentFile: string,
 /**
  * Find all rule files for a given context.
  * Searches from currentFile upward to projectRoot for rule directories,
- * then [$CLAUDE_CONFIG_DIR|~/.claude]/rules.
+ * then the session config dir ([...]/.claude or ~/.codebuddy in CodeBuddy
+ * sessions)/rules.
  */
 export declare function findRuleFiles(projectRoot: string | null, currentFile: string): RuleFileCandidate[];
 //# sourceMappingURL=finder.d.ts.map

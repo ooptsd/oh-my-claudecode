@@ -3,8 +3,11 @@
  *
  * Resolves the active Claude Code configuration directory, honouring
  * CLAUDE_CONFIG_DIR (absolute path, or ~-prefixed) with fallback to
- * ~/.claude.  Trailing separators are stripped; filesystem roots are
+ * ~/.claude. Trailing separators are stripped; filesystem roots are
  * preserved.
+ *
+ * In a detected CodeBuddy session (see src/utils/client.ts) this resolves to
+ * ~/.codebuddy instead, so CodeBuddy hook state never lands in ~/.claude.
  *
  * Multi-surface mirrors (keep in sync):
  *   scripts/lib/config-dir.mjs   — ESM hook/HUD runtime
@@ -14,9 +17,10 @@
 /**
  * Resolve the Claude Code configuration directory.
  *
- * Honours CLAUDE_CONFIG_DIR (absolute path, or ~-prefixed) with fallback
- * to ~/.claude.  Trailing separators are stripped; filesystem roots are
- * preserved.
+ * Delegates to resolveClientConfigDir() (client-aware). When the CodeBuddy
+ * session signature outranks an ambient CLAUDE_CONFIG_DIR export, a
+ * one-shot-per-process stderr warning explains the override; an explicit
+ * OMC_CLIENT=codebuddy is user intent and stays silent.
  */
 export declare function getClaudeConfigDir(): string;
 /**

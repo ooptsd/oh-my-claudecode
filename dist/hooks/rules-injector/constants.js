@@ -7,6 +7,7 @@
  */
 import { join } from 'path';
 import { homedir } from 'os';
+import { detectClient } from '../../utils/client.js';
 /** Storage directory for rules injector state */
 export const OMC_STORAGE_DIR = join(homedir(), '.omc');
 export const RULES_INJECTOR_STORAGE = join(OMC_STORAGE_DIR, 'rules-injector');
@@ -25,6 +26,18 @@ export const PROJECT_RULE_SUBDIRS = [
     ['.cursor', 'rules'],
     ['.claude', 'rules'],
 ];
+/**
+ * Session-aware project rule subdirectories. Identical to
+ * PROJECT_RULE_SUBDIRS except that CodeBuddy sessions swap the `.claude/rules`
+ * entry for `.codebuddy/rules`: CodeBuddy never reads `.claude/` project
+ * state, so rule discovery must not cross-read it either.
+ */
+export function getProjectRuleSubdirs() {
+    if (detectClient() === 'codebuddy') {
+        return PROJECT_RULE_SUBDIRS.map(([parent, subdir]) => parent === '.claude' ? ['.codebuddy', subdir] : [parent, subdir]);
+    }
+    return PROJECT_RULE_SUBDIRS;
+}
 /** Single-file rules that always apply */
 export const PROJECT_RULE_FILES = [
     '.github/copilot-instructions.md',

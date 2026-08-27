@@ -1,7 +1,8 @@
 /**
  * Rules Finder
  *
- * Finds rule files in project directories and [$CLAUDE_CONFIG_DIR|~/.claude].
+ * Finds rule files in project directories and the session config dir
+ * ([$CLAUDE_CONFIG_DIR|~/.claude]; ~/.codebuddy in CodeBuddy sessions).
  *
  * Ported from oh-my-opencode's rules-injector hook.
  */
@@ -17,7 +18,7 @@ import {
   GITHUB_INSTRUCTIONS_PATTERN,
   PROJECT_MARKERS,
   PROJECT_RULE_FILES,
-  PROJECT_RULE_SUBDIRS,
+  getProjectRuleSubdirs,
   RULE_EXTENSIONS,
 } from './constants.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
@@ -153,7 +154,8 @@ export function calculateDistance(
 /**
  * Find all rule files for a given context.
  * Searches from currentFile upward to projectRoot for rule directories,
- * then [$CLAUDE_CONFIG_DIR|~/.claude]/rules.
+ * then the session config dir ([...]/.claude or ~/.codebuddy in CodeBuddy
+ * sessions)/rules.
  */
 export function findRuleFiles(
   projectRoot: string | null,
@@ -167,8 +169,9 @@ export function findRuleFiles(
   let distance = 0;
 
   while (true) {
-    // Search rule directories in current directory
-    for (const [parent, subdir] of PROJECT_RULE_SUBDIRS) {
+    // Search rule directories in current directory (session-aware: CodeBuddy
+    // sessions look under .codebuddy/rules instead of .claude/rules)
+    for (const [parent, subdir] of getProjectRuleSubdirs()) {
       const ruleDir = join(currentDir, parent, subdir);
       const files: string[] = [];
       findRuleFilesRecursive(ruleDir, files);

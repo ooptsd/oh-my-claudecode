@@ -28,6 +28,7 @@ import { join, dirname, isAbsolute } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
+import { projectClientDirName } from './lib/client-paths.mjs';
 import { atomicWriteFileSync, recoverEmergencyStateFile, withStateFileLockSync } from './lib/atomic-write.mjs';
 import { readStdin } from './lib/stdin.mjs';
 import { resolveOmcStateRoot, resolveSessionStatePathsForHook } from './lib/state-root.mjs';
@@ -1291,8 +1292,10 @@ function isTeamEnabled() {
  *    settings can still carry `enabled: true`, and vice versa).
  * 2. ENABLED: the official id is enabled by the effective Claude Code settings
  *    for the active project, resolved highest-precedence-first across
- *    `<project>/.claude/settings.local.json`, `<project>/.claude/settings.json`
- *    and `[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json`. Within a file the
+ *    `<project>/<client-dir>/settings.local.json`,
+ *    `<project>/<client-dir>/settings.json` (client dir is `.codebuddy/` in
+ *    CodeBuddy sessions, `.claude/` otherwise) and
+ *    `[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json`. Within a file the
  *    canonical `enabledPlugins` field decides (legacy `plugins` field accepted
  *    for backward compatibility), as an array of plugin ids or a map whose
  *    value is not `false`. Missing or malformed settings are treated as not
@@ -1364,9 +1367,13 @@ function resolveSettingsProjectRoot(directory) {
  */
 function isOfficialRalphLoopEnabledForProject(directory) {
   const projectRoot = resolveSettingsProjectRoot(directory);
+  // CodeBuddy only reads .codebuddy/settings.json (never .claude/settings.json),
+  // so the project scopes follow the session client dir; the user scope stays on
+  // the shared config-dir helper.
+  const projectClientDir = projectClientDirName();
   const settingsPaths = [
-    join(projectRoot, '.claude', 'settings.local.json'),
-    join(projectRoot, '.claude', 'settings.json'),
+    join(projectRoot, projectClientDir, 'settings.local.json'),
+    join(projectRoot, projectClientDir, 'settings.json'),
     join(getClaudeConfigDir(), 'settings.json'),
   ];
   for (const settingsPath of settingsPaths) {
@@ -1514,7 +1521,8 @@ function loadJsoncConfig(path) {
 
 /**
  * Skills the user opted out of via `keywordDetector.disabled` in the OMC
- * config: project `.claude/omc.jsonc` first, then user
+ * config: project `<client-dir>/omc.jsonc` first (`.codebuddy/` in CodeBuddy
+ * sessions, `.claude/` otherwise), then user
  * `~/.config/claude-omc/config.jsonc`, the same JSONC surface
  * src/config/loader.ts reads. Empty when unset, so default behavior is
  * unchanged. `cancel` is never disableable: it is the emergency stop.
@@ -1523,7 +1531,7 @@ function loadJsoncConfig(path) {
  */
 function loadDisabledKeywords(directory) {
   const configPaths = [
-    join(directory || process.cwd(), '.claude', 'omc.jsonc'),
+    join(directory || process.cwd(), projectClientDirName(), 'omc.jsonc'),
     join(getOmcUserConfigDir(), 'claude-omc', 'config.jsonc'),
   ];
   for (const configPath of configPaths) {
