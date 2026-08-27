@@ -85,7 +85,8 @@
     "generate:skill-entitlements": "node scripts/generate-skill-entitlements.mjs",
     "verify:skill-entitlements": "node scripts/generate-skill-entitlements.mjs --verify",
     "generate:prompt-projections": "node scripts/generate-prompt-projections.mjs",
-    "verify:prompt-projections": "node scripts/generate-prompt-projections.mjs --verify"
+    "verify:prompt-projections": "node scripts/generate-prompt-projections.mjs --verify",
+    "verify:codebuddy": "node scripts/verify-codebuddy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
