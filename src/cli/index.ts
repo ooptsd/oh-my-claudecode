@@ -1326,9 +1326,10 @@ Examples:
   $ omc setup --client zcode      Standalone install into ~/.zcode (skills/commands/agents/hooks/MCP)
 
 Client targeting:
-  --client claude|codebuddy is optional — without it the session is
+  --client claude|codebuddy|zcode is optional — without it the session is
   auto-detected (CodeBuddy sessions install into ~/.codebuddy with
-  CODEBUDDY.md as the memory file; everything else keeps ~/.claude).`)
+  CODEBUDDY.md as the memory file, ZCode sessions standalone-install into
+  ~/.zcode; everything else keeps ~/.claude).`)
   .action(async (options) => {
     // ZCode dispatch (T7): standalone install into ~/.zcode, bypassing the
     // Claude/CodeBuddy installer entirely. The preload side effect already
