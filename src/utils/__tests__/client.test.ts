@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, normalize } from 'node:path';
 import {
   detectClient,
   isCodebuddySession,
+  isZcodeSession,
   resolveClientConfigDir,
 } from '../client.js';
 
@@ -63,8 +64,8 @@ describe('detectClient priority matrix', () => {
   });
 
   it('falls through to auto-detection on unknown OMC_CLIENT values', () => {
-    expect(detectClient({ OMC_CLIENT: 'zcode' })).toBe('claude');
-    expect(detectClient({ OMC_CLIENT: 'zcode', CODEBUDDY_PLUGIN_ROOT: '/p' })).toBe('codebuddy');
+    expect(detectClient({ OMC_CLIENT: 'bogus' })).toBe('claude');
+    expect(detectClient({ OMC_CLIENT: 'bogus', CODEBUDDY_PLUGIN_ROOT: '/p' })).toBe('codebuddy');
   });
 
   it('isCodebuddySession mirrors detectClient', () => {
@@ -216,5 +217,31 @@ describe('getClaudeConfigDir CodeBuddy override warning', () => {
       String(args[0]).includes('CodeBuddy session detected'),
     );
     expect(warningCalls).toHaveLength(0);
+  });
+});
+
+describe('zcode client detection', () => {
+  it('detects ZCODE_APP_VERSION session signature', () => {
+    expect(detectClient({ ZCODE_APP_VERSION: '3.12.3' })).toBe('zcode');
+  });
+  it('detects ZCODE_PLUGIN_ROOT / ZCODE_PLUGIN_DATA as strong keys', () => {
+    expect(detectClient({ ZCODE_PLUGIN_ROOT: '/x' })).toBe('zcode');
+    expect(detectClient({ ZCODE_PLUGIN_DATA: '/d' })).toBe('zcode');
+  });
+  it('honours explicit OMC_CLIENT=zcode and zcode outranks ambient CLAUDE_CONFIG_DIR', () => {
+    expect(detectClient({ OMC_CLIENT: 'zcode' })).toBe('zcode');
+    expect(resolveClientConfigDir({ ZCODE_APP_VERSION: '1', CLAUDE_CONFIG_DIR: '/elsewhere' }))
+      .toBe(join(homedir(), '.zcode'));
+  });
+  it('OMC_CLIENT=claude suppresses the zcode signature', () => {
+    expect(resolveClientConfigDir({ OMC_CLIENT: 'claude', ZCODE_APP_VERSION: '1' }))
+      .toBe(join(homedir(), '.claude'));
+  });
+  it('empty-string signature keys never decide', () => {
+    expect(detectClient({ ZCODE_APP_VERSION: '  ' })).toBe('claude');
+  });
+  it('isZcodeSession mirrors detectClient', () => {
+    expect(isZcodeSession({ ZCODE_APP_VERSION: '1' })).toBe(true);
+    expect(isZcodeSession({})).toBe(false);
   });
 });

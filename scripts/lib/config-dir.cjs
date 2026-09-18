@@ -3,12 +3,14 @@ const { join, normalize, parse, sep } = require('node:path');
 
 // Client detection mirrors src/utils/client.ts (keep semantics in sync —
 // enforced by src/__tests__/client-config-dir-mirrors.test.ts):
-//   1. OMC_CLIENT=claude|codebuddy overrides detection (other values ignored)
+//   1. OMC_CLIENT=claude|codebuddy|zcode overrides detection (other values ignored)
 //   2. CodeBuddy session signature wins over an ambient CLAUDE_CONFIG_DIR:
 //      CODEBUDDY_PLUGIN_ROOT / CODEBUDDY_PLUGIN_DIRS / CODEBUDDY_PLUGIN_DATA
 //      set to a non-empty value → ~/.codebuddy
-//   3. otherwise CLAUDE_CONFIG_DIR (absolute or ~-prefixed) is honoured
-//   4. fallback ~/.claude
+//   3. ZCode session signature: ZCODE_APP_VERSION / ZCODE_PLUGIN_ROOT /
+//      ZCODE_PLUGIN_DATA set to a non-empty value → ~/.zcode
+//   4. otherwise CLAUDE_CONFIG_DIR (absolute or ~-prefixed) is honoured
+//   5. fallback ~/.claude
 
 function trimmedEnvValue(env, key) {
   const value = env[key];
@@ -23,11 +25,20 @@ function hasCodebuddySessionEnv(env) {
   );
 }
 
+const ZCODE_SESSION_ENV_KEYS = ['ZCODE_APP_VERSION', 'ZCODE_PLUGIN_ROOT', 'ZCODE_PLUGIN_DATA'];
+
+function hasZcodeSessionEnv(env) {
+  return ZCODE_SESSION_ENV_KEYS.some((key) => trimmedEnvValue(env, key) !== '');
+}
+
 function detectClient(env) {
   const override = trimmedEnvValue(env, 'OMC_CLIENT');
   if (override === 'codebuddy') return 'codebuddy';
   if (override === 'claude') return 'claude';
-  return hasCodebuddySessionEnv(env) ? 'codebuddy' : 'claude';
+  if (override === 'zcode') return 'zcode';
+  if (hasCodebuddySessionEnv(env)) return 'codebuddy';
+  if (hasZcodeSessionEnv(env)) return 'zcode';
+  return 'claude';
 }
 
 function stripTrailingSep(p) {
@@ -39,6 +50,7 @@ function stripTrailingSep(p) {
 }
 
 let warnedCodebuddyConfigDirOverride = false;
+let warnedZcodeConfigDirOverride = false;
 
 function getClaudeConfigDir() {
   const home = homedir();
@@ -57,6 +69,23 @@ function getClaudeConfigDir() {
       );
     }
     return stripTrailingSep(normalize(join(home, '.codebuddy')));
+  }
+
+  if (detectClient(process.env) === 'zcode') {
+    // Same isolation as CodeBuddy: the ZCode session signature outranks an
+    // ambient CLAUDE_CONFIG_DIR export; an explicit OMC_CLIENT=zcode is user
+    // intent and stays silent.
+    if (
+      trimmedEnvValue(process.env, 'OMC_CLIENT') !== 'zcode' &&
+      trimmedEnvValue(process.env, 'CLAUDE_CONFIG_DIR') !== '' &&
+      !warnedZcodeConfigDirOverride
+    ) {
+      warnedZcodeConfigDirOverride = true;
+      process.stderr.write(
+        '[omc] ZCode session detected; ignoring CLAUDE_CONFIG_DIR and using ~/.zcode (set OMC_CLIENT=claude to override)\n',
+      );
+    }
+    return stripTrailingSep(normalize(join(home, '.zcode')));
   }
 
   const configured = process.env.CLAUDE_CONFIG_DIR?.trim();

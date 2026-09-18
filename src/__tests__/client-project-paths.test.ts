@@ -31,6 +31,9 @@ const CLIENT_ENV_KEYS = [
   'CODEBUDDY_PROJECT_DIR',
   'CODEBUDDY_SERVICE_PROXY_URL',
   'CLAUDE_CONFIG_DIR',
+  'ZCODE_APP_VERSION',
+  'ZCODE_PLUGIN_ROOT',
+  'ZCODE_PLUGIN_DATA',
 ] as const;
 
 const ORIGINAL_ENV: Record<string, string | undefined> = {};
@@ -186,6 +189,11 @@ describe('rules-injector project rule subdirs are client-scoped', () => {
     try {
       delete process.env.CODEBUDDY_PLUGIN_ROOT;
       delete process.env.OMC_CLIENT;
+      // This suite can run inside a ZCode host (ambient ZCODE_* env); a bare
+      // "claude session" must scrub the ZCode signature keys too.
+      delete process.env.ZCODE_APP_VERSION;
+      delete process.env.ZCODE_PLUGIN_ROOT;
+      delete process.env.ZCODE_PLUGIN_DATA;
       const originalHome = process.env.HOME;
       process.env.HOME = fakeHome;
 
