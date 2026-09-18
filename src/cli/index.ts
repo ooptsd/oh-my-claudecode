@@ -48,6 +48,7 @@ import {
   getRuntimePackageRoot
 } from '../installer/index.js';
 import { setupZcode } from '../installer/zcode.js';
+import { resolveZcodePaths } from '../utils/zcode-paths.js';
 import {
   waitCommand,
   waitStatusCommand,
@@ -892,17 +893,58 @@ Examples:
  */
 program
   .command('install')
-  .description('Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)')
+  .description('Install OMC agents/commands/hooks/MCP to a target host CLI (default: claude user-level)')
   .option('-f, --force', 'Overwrite existing files')
   .option('-q, --quiet', 'Suppress output except for errors')
   .option('--skip-claude-check', 'Skip checking if Claude Code is installed')
+  .option('--skip-hooks', 'Skip hook installation')
+  .option('--force-hooks', 'Force reinstall hooks even if unchanged')
+  .option('--no-plugin', 'Install bundled skills from the current package')
+  .option('--plugin-dir-mode', 'Treat OMC as launched via --plugin-dir')
+  .addOption(
+    new Option('-c, --client <client>', 'Target host CLI (default: auto-detect or claude)')
+      .choices(['claude', 'codebuddy', 'zcode'])
+  )
+  .option('--workspace [path]', 'Install to <cwd>/.zcode (default) or <path>; only valid with --client zcode')
   .addHelpText('after', `
 Examples:
-  $ omc install                  Install to config directory (default: ~/.claude/)
-  $ omc install --force          Reinstall, overwriting existing files
-  $ omc install --quiet          Silent install for scripts
-  $ CLAUDE_CONFIG_DIR=$HOME/.claude-isolated-workspace omc install  Isolated config directory`)
+  $ omc install                              Install to default Claude Code config (~/.claude)
+  $ omc install --client zcode               Install to ~/.zcode (ZCode user-level)
+  $ omc install --client zcode --workspace   Install to <cwd>/.zcode (ZCode workspace-level)
+  $ omc install --workspace=/abs/proj/.zcode Workspace install at custom path
+
+Client targeting:
+  --client claude|codebuddy|zcode is optional. Without it, the session is
+  auto-detected (CodeBuddy sessions install to ~/.codebuddy; ZCode sessions
+  install to ~/.zcode; everything else installs to ~/.claude).`)
   .action(async (options) => {
+    // ZCode dispatch (T3): standalone install into ~/.zcode, bypassing the
+    // Claude/CodeBuddy installer entirely. The preload side effect already
+    // preset CLAUDE_CONFIG_DIR for explicit or auto-detected zcode sessions,
+    // so detectClient() here is deterministic.
+    const effectiveClient = options.client ?? detectClient();
+    if (effectiveClient === 'zcode') {
+      const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths('user');
+      const result = setupZcode({
+        scope: 'user',
+        zcodeDir,
+        agentsMcpJsonPath,
+        packageDir: getRuntimePackageRoot(),
+        hooksWanted: !options.skipHooks,
+        log: (message) => { if (!options.quiet) console.log(chalk.gray(message)); },
+      });
+      if (!result.success) {
+        console.error(chalk.red(`ZCode install failed: ${result.message}`));
+        result.errors.forEach((err) => console.error(chalk.red(`  - ${err}`)));
+        process.exit(1);
+      }
+      if (!options.quiet) {
+        console.log(chalk.green('ZCode user-level install complete (~/.zcode)!'));
+        console.log(chalk.gray(`skills=${result.deployed.skills} commands=${result.deployed.commands} agents=${result.deployed.agents} hooks=${result.deployed.hooks ? 'wired' : 'skipped'}`));
+      }
+      return;
+    }
+
     if (!options.quiet) {
       console.log(chalk.blue('╔═══════════════════════════════════════════════════════════╗'));
       console.log(chalk.blue('║         Oh-My-ClaudeCode Installer                        ║'));
