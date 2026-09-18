@@ -80,6 +80,15 @@ describe('projectClientDirName', () => {
     expect(projectClientDirName({ OMC_CLIENT: 'claude', CODEBUDDY_PLUGIN_ROOT: '/p' })).toBe('.claude');
     expect(projectClientDirName({ OMC_CLIENT: 'codebuddy' })).toBe('.codebuddy');
   });
+
+  it('keeps .claude in ZCode sessions and detectClient reports zcode (T1 遗留 M1+M2)', async () => {
+    const { projectClientDirName, detectClient } = await import(
+      pathToFileURL(join(REPO_ROOT, 'scripts', 'lib', 'client-paths.mjs')).href
+    );
+
+    expect(projectClientDirName({ ZCODE_APP_VERSION: '1' })).toBe('.claude');
+    expect(detectClient({ ZCODE_APP_VERSION: '1' })).toBe('zcode');
+  });
 });
 
 describe('keyword-detector.mjs project omc.jsonc is client-scoped', () => {
