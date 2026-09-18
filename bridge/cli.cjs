@@ -63994,7 +63994,6 @@ var source_default = chalk;
 // src/cli/index.ts
 var import_path155 = require("path");
 var import_fs134 = require("fs");
-var import_os25 = require("os");
 init_config_dir();
 init_env_vars();
 init_client();
@@ -114191,10 +114190,30 @@ Client targeting:
     }
     return;
   }
+  const useLocalBundledSkills = options.plugin === false;
+  let pluginDirMode = !!options.pluginDirMode;
+  if (!pluginDirMode && process.env[OMC_PLUGIN_ROOT_ENV]) {
+    pluginDirMode = true;
+    if (!options.quiet) {
+      console.log(source_default.gray(`Detected ${OMC_PLUGIN_ROOT_ENV} \u2014 entering dev plugin-dir mode`));
+    }
+  }
+  if (pluginDirMode && useLocalBundledSkills) {
+    if (!options.quiet) {
+      console.log(source_default.yellow("Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence"));
+    }
+    pluginDirMode = false;
+  }
+  if (pluginDirMode && !options.quiet) {
+    console.log(source_default.gray("Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)"));
+  }
   const result = install({
-    force: options.force,
+    force: !!options.force,
     verbose: !options.quiet,
-    skipClaudeCheck: options.skipClaudeCheck
+    skipClaudeCheck: options.skipClaudeCheck,
+    forceHooks: !!options.forceHooks,
+    noPlugin: useLocalBundledSkills,
+    pluginDirMode
   });
   if (result.success) {
     if (!options.quiet) {
@@ -114413,7 +114432,7 @@ Examples:
 });
 program2.command("setup").description("Run OMC setup to sync all components (hooks, agents, skills)").option("-f, --force", "Force reinstall even if already up to date").option("-q, --quiet", "Suppress output except for errors").option("--no-plugin", "Install bundled skills from the current package instead of relying on plugin-provided skills").option("--plugin-dir-mode", "Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)").option("--skip-hooks", "Skip hook installation").option("--force-hooks", "Force reinstall hooks even if unchanged").addOption(
   new Option("--client <client>", "Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy, zcode: ~/.zcode standalone; default: auto-detect the current session)").choices(["claude", "codebuddy", "zcode"])
-).addHelpText("after", `
+).option("--workspace [path]", "Forwarded to install: workspace install at <cwd>/.zcode or <path> (zcode only)").addHelpText("after", `
 Examples:
   $ omc setup                     Sync all OMC components
   $ omc setup --force             Force reinstall everything
@@ -114430,99 +114449,18 @@ Client targeting:
   auto-detected (CodeBuddy sessions install into ~/.codebuddy with
   CODEBUDDY.md as the memory file, ZCode sessions standalone-install into
   ~/.zcode; everything else keeps ~/.claude).`).action(async (options) => {
-  const effectiveClient = options.client ?? detectClient();
-  if (effectiveClient === "zcode") {
-    const result2 = setupZcode({
-      scope: "user",
-      zcodeDir: (0, import_path155.join)((0, import_os25.homedir)(), ".zcode"),
-      agentsMcpJsonPath: (0, import_path155.join)((0, import_os25.homedir)(), ".agents", "mcp.json"),
-      packageDir: getRuntimePackageRoot(),
-      hooksWanted: !options.skipHooks,
-      log: (message2) => {
-        if (!options.quiet) console.log(source_default.gray(message2));
-      }
-    });
-    if (!result2.success) {
-      console.error(source_default.red(`ZCode setup failed: ${result2.message}`));
-      result2.errors.forEach((err) => console.error(source_default.red(`  - ${err}`)));
-      process.exit(1);
-    }
-    if (!options.quiet) {
-      console.log(source_default.green("ZCode setup complete!"));
-      console.log(source_default.gray(`skills=${result2.deployed.skills} commands=${result2.deployed.commands} agents=${result2.deployed.agents} hooks=${result2.deployed.hooks ? "wired" : "skipped"}`));
-    }
-    return;
+  const args = ["install"];
+  if (options.client) args.push("--client", options.client);
+  if (options.workspace !== void 0) {
+    args.push(options.workspace === true ? "--workspace" : `--workspace=${options.workspace}`);
   }
-  if (!options.quiet) {
-    console.log(source_default.blue("Oh-My-ClaudeCode Setup\n"));
-  }
-  if (!options.quiet) {
-    console.log(source_default.gray("Syncing OMC components..."));
-  }
-  const useLocalBundledSkills = options.plugin === false;
-  let pluginDirMode = !!options.pluginDirMode;
-  if (!pluginDirMode && process.env[OMC_PLUGIN_ROOT_ENV]) {
-    pluginDirMode = true;
-    if (!options.quiet) {
-      console.log(source_default.gray(`Detected ${OMC_PLUGIN_ROOT_ENV} \u2014 entering dev plugin-dir mode`));
-    }
-  }
-  if (pluginDirMode && useLocalBundledSkills) {
-    if (!options.quiet) {
-      console.log(source_default.yellow("Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence"));
-    }
-    pluginDirMode = false;
-  }
-  if (pluginDirMode && !options.quiet) {
-    console.log(source_default.gray("Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)"));
-  }
-  const result = install({
-    force: !!options.force,
-    verbose: !options.quiet,
-    skipClaudeCheck: true,
-    forceHooks: !!options.forceHooks,
-    noPlugin: useLocalBundledSkills,
-    pluginDirMode
-  });
-  if (!result.success) {
-    console.error(source_default.red(`Setup failed: ${result.message}`));
-    if (result.errors.length > 0) {
-      result.errors.forEach((err) => console.error(source_default.red(`  - ${err}`)));
-    }
-    process.exit(1);
-  }
-  if (!options.quiet) {
-    console.log("");
-    console.log(source_default.green("Setup complete!"));
-    console.log("");
-    if (result.installedAgents.length > 0) {
-      console.log(source_default.gray(`  Agents:   ${result.installedAgents.length} synced`));
-    }
-    if (result.installedCommands.length > 0) {
-      console.log(source_default.gray(`  Commands: ${result.installedCommands.length} synced`));
-    }
-    if (result.installedSkills.length > 0) {
-      console.log(source_default.gray(`  Skills:   ${result.installedSkills.length} synced`));
-    }
-    if (result.hooksConfigured) {
-      console.log(source_default.gray("  Hooks:    configured"));
-    }
-    if (result.hookConflicts.length > 0) {
-      console.log("");
-      console.log(source_default.yellow("  Hook conflicts detected:"));
-      result.hookConflicts.forEach((c) => {
-        console.log(source_default.yellow(`    - ${c.eventType}: ${c.existingCommand}`));
-      });
-    }
-    const installed = getInstalledVersion();
-    const reportedVersion = installed?.version ?? version2;
-    console.log("");
-    console.log(source_default.gray(`Version: ${reportedVersion}`));
-    if (reportedVersion !== version2) {
-      console.log(source_default.gray(`CLI package version: ${version2}`));
-    }
-    console.log(source_default.gray("Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup."));
-  }
+  if (options.force) args.push("--force");
+  if (options.quiet) args.push("--quiet");
+  if (options.skipHooks) args.push("--skip-hooks");
+  if (options.forceHooks) args.push("--force-hooks");
+  if (options.plugin === false) args.push("--no-plugin");
+  if (options.pluginDirMode) args.push("--plugin-dir-mode");
+  await program2.parseAsync([process.argv[0], process.argv[1], ...args]);
 });
 program2.command("postinstall", { hidden: true }).description("Run post-install setup (called automatically by npm)").action(async () => {
   const result = install({
