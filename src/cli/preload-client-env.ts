@@ -16,12 +16,17 @@
  *      and OMC_CLIENT=codebuddy, overriding pre-existing values with a
  *      one-shot stderr warning. Repeated flags are last-wins, matching
  *      commander's option handling.
- *   2. Explicit `--client claude` sets OMC_CLIENT=claude only (suppresses
+ *   2. Explicit `--client zcode` (space or `=` form) presets
+ *      CLAUDE_CONFIG_DIR=~/.zcode and OMC_CLIENT=zcode — no
+ *      CLAUDE_MCP_CONFIG_PATH (ZCode has no such file; MCP is configured in
+ *      ~/.agents/mcp.json) — overriding pre-existing values with a one-shot
+ *      stderr warning.
+ *   3. Explicit `--client claude` sets OMC_CLIENT=claude only (suppresses
  *      auto-detection; user keeps full CLAUDE_CONFIG_DIR semantics).
- *   3. No flag: auto-detect the CodeBuddy session signature
- *      (src/utils/client.ts). CodeBuddy → same preset as (1); anything else →
- *      complete no-op (zero env writes, Claude behavior byte-identical).
- *   4. Test guard: NODE_ENV=test or OMC_PRELOAD_DISABLED=1 disables (3)
+ *   4. No flag: auto-detect the session signature (src/utils/client.ts).
+ *      CodeBuddy → same preset as (1); ZCode → same preset as (2); anything
+ *      else → complete no-op (zero env writes, Claude behavior byte-identical).
+ *   5. Test guard: NODE_ENV=test or OMC_PRELOAD_DISABLED=1 disables (4)
  *      auto-detection only — explicit --client flags still apply so tests can
  *      pin the client explicitly.
  *
@@ -37,7 +42,7 @@ import { homedir } from 'os';
 import { join, normalize } from 'path';
 import { detectClient } from '../utils/client.js';
 
-export type PreloadClient = 'claude' | 'codebuddy';
+export type PreloadClient = 'claude' | 'codebuddy' | 'zcode';
 
 export interface ClientEnvPreloadPlan {
   /** Resolved client, or null when the plan writes nothing. */
@@ -51,7 +56,7 @@ export interface ClientEnvPreloadPlan {
 }
 
 const CLIENT_FLAG = '--client';
-const VALID_CLIENTS: readonly PreloadClient[] = ['claude', 'codebuddy'];
+const VALID_CLIENTS: readonly PreloadClient[] = ['claude', 'codebuddy', 'zcode'];
 
 /**
  * Extract the last valid `--client <name>` / `--client=<name>` value from raw
@@ -111,6 +116,23 @@ function buildCodebuddyPlan(env: NodeJS.ProcessEnv): ClientEnvPreloadPlan {
   };
 }
 
+/** Build the env preset + warnings for a zcode target (flag or detected). */
+function buildZcodePlan(env: NodeJS.ProcessEnv): ClientEnvPreloadPlan {
+  const configDir = normalize(join(homedir(), '.zcode'));
+  const overridden: string[] = [];
+  const recordOverridden = (key: string, nextValue: string): void => {
+    const existing = trimmed(env, key);
+    if (existing && normalize(existing) !== normalize(nextValue)) {
+      overridden.push(`${key}="${existing}"`);
+    }
+  };
+  recordOverridden('CLAUDE_CONFIG_DIR', configDir);
+  const warnings = overridden.length > 0
+    ? [`[omc] ZCode client preset is overriding explicitly set environment variables: ${overridden.join(', ')} (set OMC_CLIENT=claude to keep them)`]
+    : [];
+  return { client: 'zcode', env: { CLAUDE_CONFIG_DIR: configDir, OMC_CLIENT: 'zcode' }, warnings, autoDetectionSkipped: false };
+}
+
 const NOOP_PLAN: ClientEnvPreloadPlan = {
   client: null,
   env: {},
@@ -131,6 +153,9 @@ export function resolvePreloadPlan(
   if (flagged === 'codebuddy') {
     return buildCodebuddyPlan(env);
   }
+  if (flagged === 'zcode') {
+    return buildZcodePlan(env);
+  }
   if (flagged === 'claude') {
     return { client: 'claude', env: { OMC_CLIENT: 'claude' }, warnings: [], autoDetectionSkipped: false };
   }
@@ -141,7 +166,10 @@ export function resolvePreloadPlan(
     return { ...NOOP_PLAN, autoDetectionSkipped: true };
   }
 
-  return detectClient(env) === 'codebuddy' ? buildCodebuddyPlan(env) : NOOP_PLAN;
+  const detected = detectClient(env);
+  if (detected === 'codebuddy') return buildCodebuddyPlan(env);
+  if (detected === 'zcode') return buildZcodePlan(env);
+  return NOOP_PLAN;
 }
 
 /** Apply a plan: mutate env and emit warnings (single stderr write). */

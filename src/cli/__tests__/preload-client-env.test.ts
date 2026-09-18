@@ -8,7 +8,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, normalize } from 'node:path';
 
 const originalHome = process.env.HOME;
@@ -84,7 +84,7 @@ describe('resolvePreloadPlan', () => {
 
   it('ignores invalid --client values (commander rejects them later)', async () => {
     const { resolvePreloadPlan } = await loadPreload();
-    const plan = resolvePreloadPlan(['setup', '--client', 'zcode'], { NODE_ENV: 'test' });
+    const plan = resolvePreloadPlan(['setup', '--client', 'invalid-client'], { NODE_ENV: 'test' });
     expect(plan.client).toBeNull();
     expect(plan.env).toEqual({});
   });
@@ -173,7 +173,7 @@ describe('parseClientFlagArgv last-wins (matches commander)', () => {
 
   it('keeps the earlier valid value when a repeated flag trails with an invalid value', async () => {
     const { parseClientFlagArgv } = await loadPreload();
-    expect(parseClientFlagArgv(['--client', 'claude', '--client', 'zcode'])).toBe('claude');
+    expect(parseClientFlagArgv(['--client', 'claude', '--client', 'invalid-client'])).toBe('claude');
   });
 
   it('still yields undefined for a lone flagless --client', async () => {
@@ -183,7 +183,7 @@ describe('parseClientFlagArgv last-wins (matches commander)', () => {
 
   it('still yields undefined for a lone invalid --client value', async () => {
     const { parseClientFlagArgv } = await loadPreload();
-    expect(parseClientFlagArgv(['setup', '--client', 'zcode'])).toBeUndefined();
+    expect(parseClientFlagArgv(['setup', '--client', 'invalid-client'])).toBeUndefined();
   });
 });
 
@@ -226,5 +226,35 @@ describe('import-time side effect', () => {
     expect(process.env.CLAUDE_CONFIG_DIR).toBeUndefined();
     expect(process.env.CLAUDE_MCP_CONFIG_PATH).toBeUndefined();
     expect(process.env.OMC_CLIENT).toBeUndefined();
+  });
+});
+
+describe('zcode preload plan', () => {
+  it('--client zcode presets CLAUDE_CONFIG_DIR and OMC_CLIENT, no MCP path', async () => {
+    const { resolvePreloadPlan } = await loadPreload();
+    const plan = resolvePreloadPlan(['setup', '--client', 'zcode'], {});
+    expect(plan.client).toBe('zcode');
+    expect(plan.env).toEqual({
+      CLAUDE_CONFIG_DIR: normalize(join(homedir(), '.zcode')),
+      OMC_CLIENT: 'zcode',
+    });
+    expect(plan.env.CLAUDE_MCP_CONFIG_PATH).toBeUndefined();
+  });
+
+  it('detected zcode session yields the same plan', async () => {
+    const { resolvePreloadPlan } = await loadPreload();
+    const plan = resolvePreloadPlan(['setup'], { ZCODE_APP_VERSION: '1' });
+    expect(plan.client).toBe('zcode');
+    expect(plan.env.OMC_CLIENT).toBe('zcode');
+  });
+
+  it('claude NOOP surface stays byte-identical (regression)', async () => {
+    const { resolvePreloadPlan } = await loadPreload();
+    expect(resolvePreloadPlan(['setup'], {})).toEqual({
+      client: null,
+      env: {},
+      warnings: [],
+      autoDetectionSkipped: false,
+    });
   });
 });
