@@ -61872,7 +61872,7 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
   let displayPath;
   switch (format) {
     case "relative": {
-      const home = (0, import_node_os5.homedir)().replace(/\\/g, "/");
+      const home = (0, import_node_os6.homedir)().replace(/\\/g, "/");
       const normalizedCwd = cwd2.replace(/\\/g, "/");
       if (normalizedCwd === home) {
         displayPath = "~";
@@ -61887,8 +61887,8 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
       displayPath = cwd2;
       break;
     case "folder": {
-      const parent = (0, import_node_path31.basename)((0, import_node_path31.dirname)(cwd2));
-      const folder = (0, import_node_path31.basename)(cwd2);
+      const parent = (0, import_node_path32.basename)((0, import_node_path32.dirname)(cwd2));
+      const folder = (0, import_node_path32.basename)(cwd2);
       displayPath = parent ? `${parent}/${folder}` : folder;
       break;
     }
@@ -61902,29 +61902,29 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
   }
   return rendered;
 }
-var import_node_os5, import_node_path31;
+var import_node_os6, import_node_path32;
 var init_cwd = __esm({
   "src/hud/elements/cwd.ts"() {
     "use strict";
-    import_node_os5 = require("node:os");
-    import_node_path31 = require("node:path");
+    import_node_os6 = require("node:os");
+    import_node_path32 = require("node:path");
     init_colors();
   }
 });
 
 // src/hud/elements/hostname.ts
 function renderHostname() {
-  const full = (0, import_node_os6.hostname)();
+  const full = (0, import_node_os7.hostname)();
   if (!full) return null;
   const short = full.split(".")[0];
   if (!short) return null;
   return cyan(`host:${short}`);
 }
-var import_node_os6;
+var import_node_os7;
 var init_hostname = __esm({
   "src/hud/elements/hostname.ts"() {
     "use strict";
-    import_node_os6 = require("node:os");
+    import_node_os7 = require("node:os");
     init_colors();
   }
 });
@@ -61940,7 +61940,7 @@ function git2(args, cwd2) {
   }).trim();
 }
 function getGitRepoName(cwd2) {
-  const key = cwd2 ? (0, import_node_path32.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = repoCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61961,7 +61961,7 @@ function getGitRepoName(cwd2) {
   return result;
 }
 function getGitBranch(cwd2) {
-  const key = cwd2 ? (0, import_node_path32.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = branchCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61977,7 +61977,7 @@ function getGitBranch(cwd2) {
   return result;
 }
 function getWorktreeInfo(cwd2) {
-  const key = cwd2 ? (0, import_node_path32.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = worktreeCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61986,8 +61986,8 @@ function getWorktreeInfo(cwd2) {
   try {
     const gitDir = git2(["rev-parse", "--git-dir"], cwd2);
     const gitCommonDir = git2(["rev-parse", "--git-common-dir"], cwd2);
-    let resolvedGitDir = (0, import_node_path32.resolve)(key, gitDir);
-    let resolvedCommonDir = (0, import_node_path32.resolve)(key, gitCommonDir);
+    let resolvedGitDir = (0, import_node_path33.resolve)(key, gitDir);
+    let resolvedCommonDir = (0, import_node_path33.resolve)(key, gitCommonDir);
     try {
       resolvedGitDir = (0, import_node_fs27.realpathSync)(resolvedGitDir);
     } catch {
@@ -61997,7 +61997,7 @@ function getWorktreeInfo(cwd2) {
     } catch {
     }
     if (resolvedGitDir !== resolvedCommonDir) {
-      result = { isWorktree: true, worktreeName: (0, import_node_path32.basename)(resolvedGitDir) };
+      result = { isWorktree: true, worktreeName: (0, import_node_path33.basename)(resolvedGitDir) };
     }
   } catch {
   }
@@ -62019,7 +62019,7 @@ function renderGitBranch(cwd2) {
   return `${dim("branch:")}${cyan(branch)}`;
 }
 function getGitStatusCounts(cwd2) {
-  const key = cwd2 ? (0, import_node_path32.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = statusCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -62070,13 +62070,13 @@ function renderGitStatus(cwd2, labels = DEFAULT_HUD_LABELS) {
   if (behind > 0) parts.push(`${red(labels.behind)}${behind}`);
   return parts.join(" ");
 }
-var import_node_child_process14, import_node_fs27, import_node_path32, CACHE_TTL_MS3, repoCache, branchCache, worktreeCache, statusCache;
+var import_node_child_process14, import_node_fs27, import_node_path33, CACHE_TTL_MS3, repoCache, branchCache, worktreeCache, statusCache;
 var init_git = __esm({
   "src/hud/elements/git.ts"() {
     "use strict";
     import_node_child_process14 = require("node:child_process");
     import_node_fs27 = require("node:fs");
-    import_node_path32 = require("node:path");
+    import_node_path33 = require("node:path");
     init_colors();
     init_types6();
     CACHE_TTL_MS3 = 3e4;
@@ -62103,10 +62103,10 @@ function isGitRepo(dir) {
   }
 }
 function looksLikeRepo(entryPath) {
-  return (0, import_node_fs28.existsSync)((0, import_node_path33.join)(entryPath, ".git"));
+  return (0, import_node_fs28.existsSync)((0, import_node_path34.join)(entryPath, ".git"));
 }
 function countActiveSessions(cwd2) {
-  const sessionsDir = (0, import_node_path33.join)(getOmcRoot(cwd2), "state", "sessions");
+  const sessionsDir = (0, import_node_path34.join)(getOmcRoot(cwd2), "state", "sessions");
   if (!(0, import_node_fs28.existsSync)(sessionsDir)) return 0;
   const now = Date.now();
   let active = 0;
@@ -62115,7 +62115,7 @@ function countActiveSessions(cwd2) {
     for (const entry2 of entries) {
       if (!entry2.isDirectory()) continue;
       if (!SESSION_ID_PATTERN.test(entry2.name)) continue;
-      const dirPath = (0, import_node_path33.join)(sessionsDir, entry2.name);
+      const dirPath = (0, import_node_path34.join)(sessionsDir, entry2.name);
       let fresh = false;
       try {
         if (now - (0, import_node_fs28.statSync)(dirPath).mtimeMs < ACTIVITY_WINDOW_MS) {
@@ -62123,7 +62123,7 @@ function countActiveSessions(cwd2) {
         } else {
           for (const f of (0, import_node_fs28.readdirSync)(dirPath)) {
             try {
-              if (now - (0, import_node_fs28.statSync)((0, import_node_path33.join)(dirPath, f)).mtimeMs < ACTIVITY_WINDOW_MS) {
+              if (now - (0, import_node_fs28.statSync)((0, import_node_path34.join)(dirPath, f)).mtimeMs < ACTIVITY_WINDOW_MS) {
                 fresh = true;
                 break;
               }
@@ -62141,7 +62141,7 @@ function countActiveSessions(cwd2) {
   return active;
 }
 function detectMultiRepo(cwd2) {
-  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path34.resolve)(cwd2) : process.cwd();
   const cached2 = multiRepoCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -62158,7 +62158,7 @@ function detectMultiRepo(cwd2) {
       for (const entry2 of entries) {
         if (!entry2.isDirectory()) continue;
         if (entry2.name.startsWith(".")) continue;
-        if (looksLikeRepo((0, import_node_path33.join)(key, entry2.name))) subrepoCount++;
+        if (looksLikeRepo((0, import_node_path34.join)(key, entry2.name))) subrepoCount++;
       }
     } catch {
     }
@@ -62166,12 +62166,12 @@ function detectMultiRepo(cwd2) {
       multiRepoCache.set(key, { value: null, expiresAt: Date.now() + CACHE_TTL_MS4 });
       return null;
     }
-    const hasMarker = (0, import_node_fs28.existsSync)((0, import_node_path33.join)(key, ".omc-workspace"));
+    const hasMarker = (0, import_node_fs28.existsSync)((0, import_node_path34.join)(key, ".omc-workspace"));
     const activeSessions = hasMarker ? countActiveSessions(key) : 0;
     result = {
       isMultiRepo: true,
       hasMarker,
-      parentName: (0, import_node_path33.basename)(key),
+      parentName: (0, import_node_path34.basename)(key),
       subrepoCount,
       activeSessions
     };
@@ -62190,13 +62190,13 @@ function renderMultiRepo(cwd2) {
   const sessionsPart = info.activeSessions > 0 ? ` ${dim("sessions:~")}${green(String(info.activeSessions))}` : ` ${dim("sessions:~")}${dim("0")}`;
   return `${dim("mr:")}${cyan(info.parentName)} ${dim("repos:")}${cyan(String(info.subrepoCount))}` + sessionsPart;
 }
-var import_node_child_process15, import_node_fs28, import_node_path33, ACTIVITY_WINDOW_MS, SESSION_ID_PATTERN, CACHE_TTL_MS4, multiRepoCache;
+var import_node_child_process15, import_node_fs28, import_node_path34, ACTIVITY_WINDOW_MS, SESSION_ID_PATTERN, CACHE_TTL_MS4, multiRepoCache;
 var init_multi_repo = __esm({
   "src/hud/elements/multi-repo.ts"() {
     "use strict";
     import_node_child_process15 = require("node:child_process");
     import_node_fs28 = require("node:fs");
-    import_node_path33 = require("node:path");
+    import_node_path34 = require("node:path");
     init_colors();
     init_worktree_paths();
     ACTIVITY_WINDOW_MS = 5 * 60 * 1e3;
@@ -106555,10 +106555,19 @@ function setupZcode(options) {
     }
   }
   (0, import_node_fs20.mkdirSync)(zcodeDir, { recursive: true });
+  if (options.scope === "workspace" && options.workspacePath) {
+    (0, import_node_fs20.mkdirSync)((0, import_node_path24.join)(options.workspacePath, ".omc"), { recursive: true });
+  }
   if (!(0, import_node_fs20.existsSync)((0, import_node_path24.join)(zcodeDir, ".omc-config.json"))) {
     (0, import_node_fs20.writeFileSync)((0, import_node_path24.join)(zcodeDir, ".omc-config.json"), JSON.stringify({ configuredAt: (/* @__PURE__ */ new Date()).toISOString(), setupVersion: `v${PACKAGE_VERSION}`, nodeBinary: process.execPath }, null, 2));
   }
-  (0, import_node_fs20.writeFileSync)((0, import_node_path24.join)(zcodeDir, ".omc-version.json"), JSON.stringify({ version: PACKAGE_VERSION, configuredAt: (/* @__PURE__ */ new Date()).toISOString() }, null, 2));
+  const versionPayload = {
+    version: PACKAGE_VERSION,
+    installedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    ...options.scope === "workspace" && options.workspacePath ? { scope: "workspace", workspacePath: options.workspacePath } : { scope: "user" }
+  };
+  const versionPath = options.scope === "workspace" && options.workspacePath ? (0, import_node_path24.join)(options.workspacePath, ".omc-version.json") : (0, import_node_path24.join)(zcodeDir, ".omc-version.json");
+  (0, import_node_fs20.writeFileSync)(versionPath, JSON.stringify(versionPayload, null, 2));
   let hooksWrote = false;
   if (options.hooksWanted !== false) {
     const hooksDir = (0, import_node_path24.join)(zcodeDir, "hooks");
@@ -106623,6 +106632,29 @@ function setupZcode(options) {
     errors,
     deployed: { hooks: hooksWrote, skills: countDirs((0, import_node_path24.join)(zcodeDir, "skills")), commands: countMd((0, import_node_path24.join)(zcodeDir, "commands")), agents: agentResults.filter((r) => r.ok).length },
     pluginsRemoved: removed
+  };
+}
+
+// src/utils/zcode-paths.ts
+var import_node_os5 = require("node:os");
+var import_node_path25 = require("node:path");
+function resolveZcodePaths(scope, workspacePath) {
+  if (scope === "workspace") {
+    if (workspacePath !== void 0) {
+      return {
+        zcodeDir: workspacePath,
+        agentsMcpJsonPath: `${workspacePath}/.agents/mcp.json`
+      };
+    }
+    const zcodeDir = (0, import_node_path25.join)(process.cwd(), ".zcode");
+    return {
+      zcodeDir,
+      agentsMcpJsonPath: (0, import_node_path25.join)(zcodeDir, ".agents", "mcp.json")
+    };
+  }
+  return {
+    zcodeDir: (0, import_node_path25.join)((0, import_node_os5.homedir)(), ".zcode"),
+    agentsMcpJsonPath: (0, import_node_path25.join)((0, import_node_os5.homedir)(), ".agents", "mcp.json")
   };
 }
 
@@ -108566,7 +108598,7 @@ function inferDelegationPlanForTeamTask(text) {
 // src/cli/commands/team.ts
 init_loader();
 var import_node_fs21 = require("node:fs");
-var import_node_path25 = require("node:path");
+var import_node_path26 = require("node:path");
 init_tmux_utils();
 init_worktree_paths();
 var HELP_TOKENS = /* @__PURE__ */ new Set(["--help", "-h", "help"]);
@@ -108741,8 +108773,8 @@ function slugifyTask(task) {
 }
 function resolveAvailableTeamName(baseName, cwd2) {
   const sanitizedBase = slugifyTask(baseName);
-  const stateRoot2 = (0, import_node_path25.join)(getOmcRoot(cwd2), "state", "team");
-  const teamDir3 = (name) => (0, import_node_path25.join)(stateRoot2, name);
+  const stateRoot2 = (0, import_node_path26.join)(getOmcRoot(cwd2), "state", "team");
+  const teamDir3 = (name) => (0, import_node_path26.join)(stateRoot2, name);
   if (!(0, import_node_fs21.existsSync)(teamDir3(sanitizedBase))) return sanitizedBase;
   for (let suffix = 2; suffix <= 99; suffix++) {
     const suffixText = `-${suffix}`;
@@ -110248,7 +110280,7 @@ var import_promises29 = require("node:fs/promises");
 // src/goal-workflows/claude-goal-snapshot.ts
 var import_node_fs22 = require("node:fs");
 var import_promises27 = require("node:fs/promises");
-var import_node_path26 = require("node:path");
+var import_node_path27 = require("node:path");
 var ClaudeGoalSnapshotError = class extends Error {
 };
 function safeObject(value) {
@@ -110301,7 +110333,7 @@ async function readClaudeGoalSnapshotInput(raw, cwd2 = process.cwd()) {
   try {
     return parseClaudeGoalSnapshot(JSON.parse(trimmed2));
   } catch {
-    const path27 = (0, import_node_path26.resolve)(cwd2, trimmed2);
+    const path27 = (0, import_node_path27.resolve)(cwd2, trimmed2);
     if (!(0, import_node_fs22.existsSync)(path27)) {
       throw new ClaudeGoalSnapshotError(`Claude goal snapshot is neither valid JSON nor a readable path: ${trimmed2}`);
     }
@@ -110347,7 +110379,7 @@ function formatClaudeGoalReconciliation(reconciliation) {
 // src/ultragoal/artifacts.ts
 var import_node_fs23 = require("node:fs");
 var import_promises28 = require("node:fs/promises");
-var import_node_path27 = require("node:path");
+var import_node_path28 = require("node:path");
 init_worktree_paths();
 var ULTRAGOAL_DIR = ".omc/ultragoal";
 var ULTRAGOAL_BRIEF = "brief.md";
@@ -110361,20 +110393,20 @@ function iso(now = /* @__PURE__ */ new Date()) {
 }
 function ultragoalDir(cwd2, planId) {
   const omcRoot = getOmcRoot(cwd2);
-  if (planId) return (0, import_node_path27.join)(omcRoot, "ultragoal", ULTRAGOAL_PLANS_SUBDIR, planId);
-  return (0, import_node_path27.join)(omcRoot, "ultragoal");
+  if (planId) return (0, import_node_path28.join)(omcRoot, "ultragoal", ULTRAGOAL_PLANS_SUBDIR, planId);
+  return (0, import_node_path28.join)(omcRoot, "ultragoal");
 }
 function ultragoalBriefPath(cwd2, planId) {
-  return (0, import_node_path27.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_BRIEF);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_BRIEF);
 }
 function ultragoalGoalsPath(cwd2, planId) {
-  return (0, import_node_path27.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_GOALS);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_GOALS);
 }
 function ultragoalLedgerPath(cwd2, planId) {
-  return (0, import_node_path27.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_LEDGER);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_LEDGER);
 }
 async function listUltragoalPlanIds(cwd2) {
-  const dir = (0, import_node_path27.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_PLANS_SUBDIR);
+  const dir = (0, import_node_path28.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_PLANS_SUBDIR);
   try {
     const entries = await (0, import_promises28.readdir)(dir, { withFileTypes: true });
     return entries.filter((entry2) => entry2.isDirectory()).filter((entry2) => /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(entry2.name)).map((entry2) => entry2.name).sort();
@@ -110389,7 +110421,7 @@ async function resolveActivePlanId(cwd2, explicitPlanId) {
     }
     return explicitPlanId;
   }
-  if ((0, import_node_fs23.existsSync)((0, import_node_path27.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_GOALS))) return void 0;
+  if ((0, import_node_fs23.existsSync)((0, import_node_path28.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_GOALS))) return void 0;
   const plans = await listUltragoalPlanIds(cwd2);
   if (plans.length === 1) return plans[0];
   if (plans.length === 0) return void 0;
@@ -110404,7 +110436,7 @@ function makePlanId(brief, now) {
   return `${ts}-${slug}`;
 }
 function repoRelative(cwd2, path27) {
-  return (0, import_node_path27.relative)(cwd2, path27).split("\\").join("/");
+  return (0, import_node_path28.relative)(cwd2, path27).split("\\").join("/");
 }
 function cleanLine(line) {
   return line.replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, "").trim();
@@ -111227,7 +111259,7 @@ ${ULTRAGOAL_HELP}`);
 
 // src/cli/commands/alias-retirement.ts
 var import_node_fs26 = require("node:fs");
-var import_node_path30 = require("node:path");
+var import_node_path31 = require("node:path");
 
 // src/alias-retirement/registry.ts
 var ALIAS_RETIREMENT_SCHEMA_VERSION = 1;
@@ -111280,7 +111312,7 @@ function assertAliasRegistryIntegrity() {
 
 // src/alias-retirement/verifier.ts
 var import_node_fs24 = require("node:fs");
-var import_node_path28 = require("node:path");
+var import_node_path29 = require("node:path");
 var import_node_url2 = require("node:url");
 function evaluateAlias(input) {
   const { record: record2, currentVersion, now, usageHistory, criticalIntegrations } = input;
@@ -111337,14 +111369,14 @@ function evaluateAlias(input) {
 }
 function getPackageVersionFallback() {
   try {
-    let dir = (0, import_node_path28.dirname)((0, import_node_url2.fileURLToPath)(importMetaUrl));
+    let dir = (0, import_node_path29.dirname)((0, import_node_url2.fileURLToPath)(importMetaUrl));
     for (let i = 0; i < 6; i++) {
       try {
-        const pkg = JSON.parse((0, import_node_fs24.readFileSync)((0, import_node_path28.join)(dir, "package.json"), "utf-8"));
+        const pkg = JSON.parse((0, import_node_fs24.readFileSync)((0, import_node_path29.join)(dir, "package.json"), "utf-8"));
         if (pkg.version) return pkg.version;
       } catch {
       }
-      const parent = (0, import_node_path28.dirname)(dir);
+      const parent = (0, import_node_path29.dirname)(dir);
       if (parent === dir) break;
       dir = parent;
     }
@@ -111383,10 +111415,10 @@ function summarizeReceipts(receipts) {
 
 // src/alias-retirement/closure.ts
 var import_node_fs25 = require("node:fs");
-var import_node_path29 = require("node:path");
+var import_node_path30 = require("node:path");
 function buildClosureReport(receipts, options = {}) {
   const cwd2 = options.cwd ?? process.cwd();
-  const exists = options.exists ?? ((p) => (0, import_node_fs25.existsSync)((0, import_node_path29.join)(cwd2, p)));
+  const exists = options.exists ?? ((p) => (0, import_node_fs25.existsSync)((0, import_node_path30.join)(cwd2, p)));
   const byAlias = new Map(receipts.map((r) => [r.alias.toLowerCase(), r]));
   const entries = receipts.flatMap(
     (r) => r.generatedArtifacts.map((p) => {
@@ -111579,8 +111611,8 @@ async function aliasRetirementCommand(args) {
     };
     const text = JSON.stringify(payload, null, 2);
     if (outPath) {
-      (0, import_node_fs26.mkdirSync)((0, import_node_path30.dirname)((0, import_node_path30.join)(process.cwd(), outPath)), { recursive: true });
-      (0, import_node_fs26.writeFileSync)((0, import_node_path30.join)(process.cwd(), outPath), `${text}
+      (0, import_node_fs26.mkdirSync)((0, import_node_path31.dirname)((0, import_node_path31.join)(process.cwd(), outPath)), { recursive: true });
+      (0, import_node_fs26.writeFileSync)((0, import_node_path31.join)(process.cwd(), outPath), `${text}
 `);
       console.log(`wrote ${outPath}`);
     }
@@ -114093,12 +114125,53 @@ Examples:
   console.log(source_default.gray("\n\u2501".repeat(50)));
   console.log(source_default.gray("\nTo check for updates, run: oh-my-claudecode update --check"));
 });
-program2.command("install").description("Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)").option("-f, --force", "Overwrite existing files").option("-q, --quiet", "Suppress output except for errors").option("--skip-claude-check", "Skip checking if Claude Code is installed").addHelpText("after", `
+program2.command("install").description("Install OMC agents/commands/hooks/MCP to a target host CLI (default: claude user-level)").option("-f, --force", "Overwrite existing files").option("-q, --quiet", "Suppress output except for errors").option("--skip-claude-check", "Skip checking if Claude Code is installed").option("--skip-hooks", "Skip hook installation").option("--force-hooks", "Force reinstall hooks even if unchanged").option("--no-plugin", "Install bundled skills from the current package").option("--plugin-dir-mode", "Treat OMC as launched via --plugin-dir").addOption(
+  new Option("-c, --client <client>", "Target host CLI (default: auto-detect or claude)").choices(["claude", "codebuddy", "zcode"])
+).option("--workspace [path]", "Install to <cwd>/.zcode (default) or <path>; only valid with --client zcode").addHelpText("after", `
 Examples:
-  $ omc install                  Install to config directory (default: ~/.claude/)
-  $ omc install --force          Reinstall, overwriting existing files
-  $ omc install --quiet          Silent install for scripts
-  $ CLAUDE_CONFIG_DIR=$HOME/.claude-isolated-workspace omc install  Isolated config directory`).action(async (options) => {
+  $ omc install                              Install to default Claude Code config (~/.claude)
+  $ omc install --client zcode               Install to ~/.zcode (ZCode user-level)
+  $ omc install --client zcode --workspace   Install to <cwd>/.zcode (ZCode workspace-level)
+  $ omc install --workspace=/abs/proj/.zcode Workspace install at custom path
+
+Client targeting:
+  --client claude|codebuddy|zcode is optional. Without it, the session is
+  auto-detected (CodeBuddy sessions install to ~/.codebuddy; ZCode sessions
+  install to ~/.zcode; everything else installs to ~/.claude).`).action(async (options) => {
+  const effectiveClient = options.client ?? detectClient();
+  const workspaceArg = options.workspace;
+  if (workspaceArg !== void 0 && effectiveClient !== "zcode") {
+    console.error(source_default.red(`--workspace currently only supports --client zcode (got --client ${effectiveClient})`));
+    process.exit(1);
+  }
+  if (effectiveClient === "zcode") {
+    const scope = workspaceArg !== void 0 ? "workspace" : "user";
+    const workspacePathForResolve = workspaceArg === true ? (0, import_path155.join)(process.cwd(), ".zcode") : workspaceArg;
+    const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths(scope, workspacePathForResolve);
+    const workspacePathForSetup = scope === "workspace" ? (0, import_path155.dirname)(zcodeDir) : void 0;
+    const result2 = setupZcode({
+      scope,
+      zcodeDir,
+      agentsMcpJsonPath,
+      ...workspacePathForSetup ? { workspacePath: workspacePathForSetup } : {},
+      packageDir: getRuntimePackageRoot(),
+      hooksWanted: !options.skipHooks,
+      log: (message2) => {
+        if (!options.quiet) console.log(source_default.gray(message2));
+      }
+    });
+    if (!result2.success) {
+      console.error(source_default.red(`ZCode ${scope} install failed: ${result2.message}`));
+      result2.errors.forEach((err) => console.error(source_default.red(`  - ${err}`)));
+      process.exit(1);
+    }
+    if (!options.quiet) {
+      const targetLabel = scope === "workspace" ? zcodeDir : "~/.zcode";
+      console.log(source_default.green(`ZCode ${scope} install complete (${targetLabel})!`));
+      console.log(source_default.gray(`skills=${result2.deployed.skills} commands=${result2.deployed.commands} agents=${result2.deployed.agents} hooks=${result2.deployed.hooks ? "wired" : "skipped"}`));
+    }
+    return;
+  }
   if (!options.quiet) {
     console.log(source_default.blue("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
     console.log(source_default.blue("\u2551         Oh-My-ClaudeCode Installer                        \u2551"));
@@ -114360,6 +114433,7 @@ Client targeting:
   const effectiveClient = options.client ?? detectClient();
   if (effectiveClient === "zcode") {
     const result2 = setupZcode({
+      scope: "user",
       zcodeDir: (0, import_path155.join)((0, import_os25.homedir)(), ".zcode"),
       agentsMcpJsonPath: (0, import_path155.join)((0, import_os25.homedir)(), ".agents", "mcp.json"),
       packageDir: getRuntimePackageRoot(),
