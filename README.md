@@ -225,6 +225,18 @@ npm run verify:codebuddy
 
 Runs the full end-to-end chain — plugin validation, marketplace add/install, setup, a headless smoke session, isolation assertions against `~/.claude`, and cleanup.
 
+## ZCode (standalone)
+
+ZCode is supported via a standalone user-level install (no marketplace plugin needed):
+
+```bash
+omc setup --client zcode
+```
+
+This deploys skills/commands/agents to `~/.zcode/`, wires the 6 supported hook events into `~/.zcode/cli/config.json`, registers the MCP bridge in `~/.agents/mcp.json`, syncs the OMC block in `~/.zcode/AGENTS.md`, and disables the `oh-my-claudecode` marketplace plugin if present. Re-run after upgrades. Subagent lifecycle and precompact hooks are not available on ZCode (the host does not expose those events). If you configure native MCP servers in `~/.zcode/cli/config.json`, note that `~/.agents/mcp.json` is skipped by ZCode while native servers exist.
+
+Note: the `config.json` hooks merge identifies OMC-owned entries by the `~/.zcode/hooks` command path — a manually configured hook entry whose command points into that same directory will be replaced by setup.
+
 ## Team Mode (Recommended)
 
 Starting in **v4.1.7**, **Team** is the canonical orchestration surface in OMC. The legacy `swarm` keyword/skill has been removed; use `team` directly.
