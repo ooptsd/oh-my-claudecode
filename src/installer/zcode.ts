@@ -1,8 +1,8 @@
 /** ZCode 安装编排（spec §7 十步）：前置校验 → 状态引导 → hook 脚本部署 → config.json hooks 接线 →
  * skills/commands 直拷贝 → agents frontmatter 转换 → ~/.agents/mcp.json 合并 → AGENTS.md OMC 块事务 →
  * enabledPlugins 去激活 → 摘要。路径全部由参数注入（packageDir = npm 包根），模块加载期只读包版本。
- * 可预期失败（包不完整、hooks.enabled 显式 false、agent 单文件失败、AGENTS.md 事务失败）不抛出：
- * 前两者短路返回 success:false，后两者计入 errors。 */
+ * 可预期失败（包不完整、hooks.enabled 显式 false、agent 单文件失败、JSON 配置损坏、AGENTS.md 事务失败）不抛出：
+ * 前两者短路返回 success:false，其余计入 errors。 */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,9 +100,20 @@ export function setupZcode(options: SetupZcodeOptions): SetupZcodeResult {
   const agentFailures = agentResults.filter((r) => !r.ok);
   for (const failure of agentFailures) errors.push(`agent ${failure.name}: ${failure.error}`);
 
-  // 8 MCP（遮蔽警告 + 合并）
-  warnIfNativeMcpShadowing(cliConfigPath, log);
-  mergeOmcMcpServer(agentsMcpJsonPath, join(packageDir, 'bridge', 'mcp-server.cjs'));
+  // 8 MCP（遮蔽警告 + 合并）：config.json 或 ~/.agents/mcp.json 损坏时计入 errors 后继续
+  // （对齐第 7 步 agent 失败计入模式），不穿透 setupZcode 直达 CLI；两调用相互独立，分别兜底。
+  try {
+    warnIfNativeMcpShadowing(cliConfigPath, log);
+  } catch (error) {
+    if (error instanceof ZcodeSetupError) errors.push(error.message);
+    else throw error;
+  }
+  try {
+    mergeOmcMcpServer(agentsMcpJsonPath, join(packageDir, 'bridge', 'mcp-server.cjs'));
+  } catch (error) {
+    if (error instanceof ZcodeSetupError) errors.push(error.message);
+    else throw error;
+  }
 
   // 9 AGENTS.md OMC 块事务（与 installer 同一事务路径；root/memoryFileName 全部 zcode 化）
   const transaction = executeClaudeMdTransaction({
@@ -116,8 +127,13 @@ export function setupZcode(options: SetupZcodeOptions): SetupZcodeResult {
   });
   if (!transaction.ok) errors.push(`AGENTS.md transaction failed: ${transaction.error ?? 'unknown'}`);
 
-  // 10 插件去激活 + 摘要
-  const configAfter = readJsonFile(cliConfigPath) ?? {};
+  // 10 插件去激活 + 摘要（config.json 损坏已在第 8 步计入 errors，这里按空配置跳过去激活）
+  let configAfter: Record<string, unknown> = {};
+  try {
+    configAfter = readJsonFile(cliConfigPath) ?? {};
+  } catch (error) {
+    if (!(error instanceof ZcodeSetupError)) throw error;
+  }
   const { config: configFinal, removed } = removeOmcFromEnabledPlugins(configAfter);
   if (removed.length > 0) writeJsonFileAtomic(cliConfigPath, configFinal);
   for (const name of removed) log(`Disabled marketplace plugin: ${name}`);

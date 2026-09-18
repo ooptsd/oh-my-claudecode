@@ -87,6 +87,43 @@ describe('setupZcode', () => {
     expect(readFileSync(cliConfigPath, 'utf-8')).toBe(original); // config 未被改写
   });
 
+  it('continues past a corrupt ~/.agents/mcp.json, recording the error and deploying the rest', () => {
+    const home = mkdtempSync(join(tmpdir(), 'omc-zcode-home-'));
+    const pkg = mkdtempSync(join(tmpdir(), 'omc-zcode-pkg-'));
+    makeFakePackage(pkg);
+    const zcodeDir = join(home, '.zcode');
+    const mcpJsonPath = join(home, '.agents/mcp.json');
+    mkdirSync(join(home, '.agents'), { recursive: true });
+    writeFileSync(mcpJsonPath, '{not json');
+
+    const result = setupZcode({ zcodeDir, agentsMcpJsonPath: mcpJsonPath, packageDir: pkg, log: () => {} });
+    expect(result.success).toBe(false); // CLI 端自然 exit 1
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors.join()).toContain(mcpJsonPath);
+    // 其余产物照常落盘
+    expect(existsSync(join(zcodeDir, 'skills/demo/SKILL.md'))).toBe(true);
+    expect(existsSync(join(zcodeDir, 'commands/ask.md'))).toBe(true);
+    expect(existsSync(join(zcodeDir, 'agents/architect.md'))).toBe(true);
+    expect(readFileSync(join(zcodeDir, 'AGENTS.md'), 'utf-8')).toContain('<!-- OMC:START -->');
+    expect(existsSync(join(zcodeDir, 'cli/config.json'))).toBe(true); // hooks 接线不受影响
+  });
+
+  it('survives a corrupt config.json when hooksWanted is false (same root cause)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'omc-zcode-home-'));
+    const pkg = mkdtempSync(join(tmpdir(), 'omc-zcode-pkg-'));
+    makeFakePackage(pkg);
+    const zcodeDir = join(home, '.zcode');
+    const cliConfigPath = join(zcodeDir, 'cli/config.json');
+    mkdirSync(join(zcodeDir, 'cli'), { recursive: true });
+    writeFileSync(cliConfigPath, '{broken');
+
+    const result = setupZcode({ zcodeDir, agentsMcpJsonPath: join(home, '.agents/mcp.json'), packageDir: pkg, hooksWanted: false, log: () => {} });
+    expect(result.success).toBe(false);
+    expect(result.errors.join()).toContain(cliConfigPath);
+    expect(readFileSync(join(zcodeDir, 'AGENTS.md'), 'utf-8')).toContain('<!-- OMC:START -->');
+    expect(existsSync(join(home, '.agents/mcp.json'))).toBe(true);
+  });
+
   it('skips hook deployment and wiring when hooksWanted is false', () => {
     const home = mkdtempSync(join(tmpdir(), 'omc-zcode-home-'));
     const pkg = mkdtempSync(join(tmpdir(), 'omc-zcode-pkg-'));

@@ -103,9 +103,17 @@ describe('omc setup --client option', () => {
       zcodeDir: join(homedir(), '.zcode'),
       agentsMcpJsonPath: join(homedir(), '.agents', 'mcp.json'),
       packageDir: expect.any(String),
+      hooksWanted: true, // 默认接线 hooks
     }));
     const setup = program.commands.find((cmd) => cmd.name() === 'setup');
     expect(setup?.opts().client).toBe('zcode');
+  });
+
+  it('passes hooksWanted=false through to setupZcode with --skip-hooks', async () => {
+    const program = await freshProgram();
+    await program.parseAsync(['setup', '--client', 'zcode', '--skip-hooks', '--quiet'], { from: 'user' });
+    expect(zcodeMock).toHaveBeenCalledTimes(1);
+    expect(zcodeMock).toHaveBeenCalledWith(expect.objectContaining({ hooksWanted: false }));
   });
 
   it('rejects unknown clients', async () => {

@@ -1341,6 +1341,7 @@ Client targeting:
         zcodeDir: join(homedir(), '.zcode'),
         agentsMcpJsonPath: join(homedir(), '.agents', 'mcp.json'),
         packageDir: getRuntimePackageRoot(),
+        hooksWanted: !options.skipHooks,
         log: (message) => { if (!options.quiet) console.log(chalk.gray(message)); },
       });
       if (!result.success) {
