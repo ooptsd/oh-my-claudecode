@@ -1338,6 +1338,7 @@ Client targeting:
     const effectiveClient = options.client ?? detectClient();
     if (effectiveClient === 'zcode') {
       const result = setupZcode({
+        scope: 'user',
         zcodeDir: join(homedir(), '.zcode'),
         agentsMcpJsonPath: join(homedir(), '.agents', 'mcp.json'),
         packageDir: getRuntimePackageRoot(),
