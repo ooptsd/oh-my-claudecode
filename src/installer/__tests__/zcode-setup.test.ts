@@ -86,4 +86,21 @@ describe('setupZcode', () => {
     expect(result.errors.join()).toContain('explicitly false');
     expect(readFileSync(cliConfigPath, 'utf-8')).toBe(original); // config 未被改写
   });
+
+  it('skips hook deployment and wiring when hooksWanted is false', () => {
+    const home = mkdtempSync(join(tmpdir(), 'omc-zcode-home-'));
+    const pkg = mkdtempSync(join(tmpdir(), 'omc-zcode-pkg-'));
+    makeFakePackage(pkg);
+    const zcodeDir = join(home, '.zcode');
+
+    const result = setupZcode({ zcodeDir, agentsMcpJsonPath: join(home, '.agents/mcp.json'), packageDir: pkg, hooksWanted: false, log: () => {} });
+    expect(result.success).toBe(true);
+    expect(existsSync(join(zcodeDir, 'cli/config.json'))).toBe(false); // 不接线
+    expect(existsSync(join(zcodeDir, 'hooks'))).toBe(false); // 不部署 hook 脚本
+    expect(result.deployed.hooks).toBe(false);
+    expect(readFileSync(join(zcodeDir, 'AGENTS.md'), 'utf-8')).toContain('<!-- OMC:START -->'); // 事务照常
+    expect(existsSync(join(zcodeDir, 'skills/demo/SKILL.md'))).toBe(true);
+    expect(existsSync(join(zcodeDir, 'commands/ask.md'))).toBe(true);
+    expect(existsSync(join(zcodeDir, 'agents/architect.md'))).toBe(true);
+  });
 });
