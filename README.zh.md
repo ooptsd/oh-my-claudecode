@@ -122,9 +122,9 @@ omc install --client zcode               # 用户级：写入 ~/.zcode
 omc install --client zcode --workspace   # 工作空间级：写入 <cwd>/.zcode
 ```
 
-该命令部署 skills/commands/agents，把 6 个受支持的 hook 事件接线进 `cli/config.json`，把 MCP 桥接注册到 `.agents/mcp.json`，同步 `AGENTS.md` 中的 OMC 块，并在存在 `oh-my-claudecode` 市场插件时将其停用。升级后重跑即可。
+该命令部署 `skills/`、`commands/`、`agents/`、`hooks/`，把 6 个受支持的 hook 事件接线进 `cli/config.json`，写入 `cli/settings.json`，把 MCP 桥接注册到 `.agents/mcp.json`，同步 `AGENTS.md` 中的 OMC 块，并在存在 `oh-my-claudecode` 市场插件时将其停用。升级后重跑即可。
 
-工作空间模式在 `<cwd>/.zcode/` 下镜像完整的用户级布局，并把版本戳写入 `<cwd>/.omc-version.json`。用户级和工作空间级独立共存；优先级由 ZCode 自身决定。
+工作空间模式在 `<cwd>/.zcode/` 下镜像完整的用户级布局（`skills/`、`commands/`、`agents/`、`hooks/`、`AGENTS.md`、`cli/config.json`、`cli/settings.json`、`.agents/mcp.json`），并在工作空间根目录另外写入版本戳 `<cwd>/.omc-version.json`（不在 `.zcode/` 内部）。用户级和工作空间级独立共存；优先级由 ZCode 自身决定。
 
 ZCode 上子代理生命周期与 PreCompact hooks 不可用（宿主不暴露这些事件）。若在 `cli/config.json` 中配置了原生 MCP server，请注意 ZCode 会跳过 `.agents/mcp.json`。
 
