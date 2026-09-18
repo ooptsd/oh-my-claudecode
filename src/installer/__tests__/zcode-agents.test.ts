@@ -47,6 +47,10 @@ You are Architect.
     const bare = 'no frontmatter here';
     expect(convertClaudeAgentToZcodeAgent(bare)).toBe(bare);
   });
+  it('treats closing delimiter without trailing newline as no frontmatter', () => {
+    const noTrailingNewline = '---\nname: a\ndescription: d\n---';
+    expect(convertClaudeAgentToZcodeAgent(noTrailingNewline)).toBe(noTrailingNewline);
+  });
   it('drops empty list fields', () => {
     const out = convertClaudeAgentToZcodeAgent('---\nname: a\ndescription: d\ndisallowedTools: \n---\nbody');
     expect(out).not.toContain('disallowedTools');

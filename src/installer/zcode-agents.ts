@@ -12,6 +12,7 @@ function splitFrontmatter(source: string): { lines: string[]; body: string } | n
   const end = source.indexOf('\n---', 3);
   if (end === -1) return null;
   const afterBar = source.indexOf('\n', end + 1);
+  if (afterBar === -1) return null;
   return {
     lines: source.slice(4, end).split('\n'),
     body: source.slice(afterBar + 1),
