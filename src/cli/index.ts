@@ -20,7 +20,7 @@ import './preload-client-env.js';
 
 import { Command, Option } from 'commander';
 import chalk from 'chalk';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { writeFileSync, existsSync } from 'fs';
 import { homedir } from 'os';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
@@ -923,23 +923,44 @@ Client targeting:
     // preset CLAUDE_CONFIG_DIR for explicit or auto-detected zcode sessions,
     // so detectClient() here is deterministic.
     const effectiveClient = options.client ?? detectClient();
+    const workspaceArg = options.workspace; // true | string | undefined
+
+    // E1: --workspace only valid with --client zcode (T4). Place this BEFORE
+    // the zcode branch so a workspace request on the claude/codebuddy path
+    // exits immediately, never reaching the installOmc banner or isInstalled()
+    // guard. Auto-detected non-zcode (no ZCODE_* env) also hits this.
+    if (workspaceArg !== undefined && effectiveClient !== 'zcode') {
+      console.error(chalk.red(`--workspace currently only supports --client zcode (got --client ${effectiveClient})`));
+      process.exit(1);
+    }
+
     if (effectiveClient === 'zcode') {
-      const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths('user');
+      const scope: 'user' | 'workspace' = workspaceArg !== undefined ? 'workspace' : 'user';
+      // workspaceArg semantics: true → <cwd>/.zcode; string → PATH 整体作 zcodeDir（spec §5.4 不自动追加 .zcode）。
+      const workspacePathForResolve = workspaceArg === true ? join(process.cwd(), '.zcode') : workspaceArg;
+      const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths(scope, workspacePathForResolve);
+      // setupZcode 的 workspacePath 参数语义是 "workspace 模式根目录"，用于 .omc-version.json 与 .omc/ 写入位置。
+      // 始终取 dirname(zcodeDir)，保证 .omc/ 顶层（在 zcodeDir 之外），与 spec W6 一致：
+      //   - --workspace (bare): zcodeDir=cwd/.zcode → workspacePath=cwd → .omc-version.json at <cwd>/.omc-version.json
+      //   - --workspace=/abs/proj: zcodeDir=/abs/proj → workspacePath=/abs → .omc-version.json at <parent>/.omc-version.json
+      const workspacePathForSetup = scope === 'workspace' ? dirname(zcodeDir) : undefined;
       const result = setupZcode({
-        scope: 'user',
+        scope,
         zcodeDir,
         agentsMcpJsonPath,
+        ...(workspacePathForSetup ? { workspacePath: workspacePathForSetup } : {}),
         packageDir: getRuntimePackageRoot(),
         hooksWanted: !options.skipHooks,
         log: (message) => { if (!options.quiet) console.log(chalk.gray(message)); },
       });
       if (!result.success) {
-        console.error(chalk.red(`ZCode install failed: ${result.message}`));
+        console.error(chalk.red(`ZCode ${scope} install failed: ${result.message}`));
         result.errors.forEach((err) => console.error(chalk.red(`  - ${err}`)));
         process.exit(1);
       }
       if (!options.quiet) {
-        console.log(chalk.green('ZCode user-level install complete (~/.zcode)!'));
+        const targetLabel = scope === 'workspace' ? zcodeDir : '~/.zcode';
+        console.log(chalk.green(`ZCode ${scope} install complete (${targetLabel})!`));
         console.log(chalk.gray(`skills=${result.deployed.skills} commands=${result.deployed.commands} agents=${result.deployed.agents} hooks=${result.deployed.hooks ? 'wired' : 'skipped'}`));
       }
       return;
