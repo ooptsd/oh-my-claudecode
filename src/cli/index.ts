@@ -935,6 +935,12 @@ Client targeting:
     }
 
     if (effectiveClient === 'zcode') {
+      // I-3 (final review): --plugin-dir-mode and --no-plugin are claude/codebuddy
+      // installer flags. ZCode has no plugin marketplace, so they have no effect
+      // here. Warn the user instead of silently consuming the flags.
+      if (options.pluginDirMode || options.plugin === false) {
+        console.warn(chalk.yellow('--plugin-dir-mode and --no-plugin are not applicable to zcode; ignoring'));
+      }
       const scope: 'user' | 'workspace' = workspaceArg !== undefined ? 'workspace' : 'user';
       // workspaceArg semantics: true → <cwd>/.zcode; string → PATH 整体作 zcodeDir（spec §5.4 不自动追加 .zcode）。
       const workspacePathForResolve = workspaceArg === true ? join(process.cwd(), '.zcode') : workspaceArg;
