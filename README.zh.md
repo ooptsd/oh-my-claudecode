@@ -113,17 +113,22 @@ npm run verify:codebuddy
 
 运行全链路端到端验证 — 插件校验、marketplace add/install、setup、headless 冒烟会话、对 `~/.claude` 的隔离断言与清理。
 
-## ZCode（独立安装）
+## ZCode（独立安装 + 工作空间）
 
-ZCode 通过纯用户级独立安装获得支持（无需市场插件）：
+ZCode 通过两种安装模式获得支持，均为独立安装（无需市场插件）：
 
 ```bash
-omc setup --client zcode
+omc install --client zcode               # 用户级：写入 ~/.zcode
+omc install --client zcode --workspace   # 工作空间级：写入 <cwd>/.zcode
 ```
 
-该命令把 skills/commands/agents 部署到 `~/.zcode/`，把 6 个受支持的 hook 事件接线进 `~/.zcode/cli/config.json`，把 MCP 桥接注册到 `~/.agents/mcp.json`，同步 `~/.zcode/AGENTS.md` 中的 OMC 块，并在存在 `oh-my-claudecode` 市场插件时将其停用。升级后重跑即可。ZCode 上子代理生命周期与 PreCompact hooks 不可用（宿主不暴露这些事件）。若在 `~/.zcode/cli/config.json` 中配置了原生 MCP server，请注意在原生 server 存在期间 ZCode 会跳过 `~/.agents/mcp.json`。
+该命令部署 skills/commands/agents，把 6 个受支持的 hook 事件接线进 `cli/config.json`，把 MCP 桥接注册到 `.agents/mcp.json`，同步 `AGENTS.md` 中的 OMC 块，并在存在 `oh-my-claudecode` 市场插件时将其停用。升级后重跑即可。
 
-注意：`config.json` 的 hooks 合并按命令路径含 `~/.zcode/hooks` 识别 OMC 条目 — 自置 hook 条目若指向同一目录，会在 setup 时被替换。
+工作空间模式在 `<cwd>/.zcode/` 下镜像完整的用户级布局，并把版本戳写入 `<cwd>/.omc-version.json`。用户级和工作空间级独立共存；优先级由 ZCode 自身决定。
+
+ZCode 上子代理生命周期与 PreCompact hooks 不可用（宿主不暴露这些事件）。若在 `cli/config.json` 中配置了原生 MCP server，请注意 ZCode 会跳过 `.agents/mcp.json`。
+
+`omc setup --client zcode [--workspace]` 保留为 `omc install --client zcode [--workspace]` 的薄别名以保持向后兼容。
 
 ## Team 模式（推荐）
 

@@ -225,17 +225,22 @@ npm run verify:codebuddy
 
 Runs the full end-to-end chain — plugin validation, marketplace add/install, setup, a headless smoke session, isolation assertions against `~/.claude`, and cleanup.
 
-## ZCode (standalone)
+## ZCode (standalone + workspace)
 
-ZCode is supported via a standalone user-level install (no marketplace plugin needed):
+ZCode is supported via two install modes, both standalone (no marketplace plugin needed):
 
 ```bash
-omc setup --client zcode
+omc install --client zcode               # User-level: writes to ~/.zcode
+omc install --client zcode --workspace   # Workspace-level: writes to <cwd>/.zcode
 ```
 
-This deploys skills/commands/agents to `~/.zcode/`, wires the 6 supported hook events into `~/.zcode/cli/config.json`, registers the MCP bridge in `~/.agents/mcp.json`, syncs the OMC block in `~/.zcode/AGENTS.md`, and disables the `oh-my-claudecode` marketplace plugin if present. Re-run after upgrades. Subagent lifecycle and PreCompact hooks are not available on ZCode (the host does not expose those events). If you configure native MCP servers in `~/.zcode/cli/config.json`, note that `~/.agents/mcp.json` is skipped by ZCode while native servers exist.
+This deploys skills/commands/agents, wires the 6 supported hook events into `cli/config.json`, registers the MCP bridge in `.agents/mcp.json`, syncs the OMC block in `AGENTS.md`, and disables the `oh-my-claudecode` marketplace plugin if present. Re-run after upgrades.
 
-Note: the `config.json` hooks merge identifies OMC entries by command paths containing `~/.zcode/hooks` — a manually configured hook entry whose command points into that same directory will be replaced by setup.
+Workspace mode mirrors the full user-level layout under `<cwd>/.zcode/` and writes the version stamp at `<cwd>/.omc-version.json`. User-level and workspace-level coexist independently; ZCode itself decides precedence.
+
+Subagent lifecycle and precompact hooks are not available on ZCode (host does not expose those events). If you configure native MCP servers in `cli/config.json`, note that `.agents/mcp.json` is skipped by ZCode.
+
+`omc setup --client zcode [--workspace]` remains as a thin alias of `omc install --client zcode [--workspace]` for backward compatibility.
 
 ## Team Mode (Recommended)
 
