@@ -51,7 +51,12 @@ function ensureBuilt(): void {
  *
  * Host session ZCODE_* / CODEBUDDY_* env vars are scrubbed (mirrors
  * test-env-hygiene.mjs) so auto-detect lands on `claude` unless the caller
- * overrides OMC_CLIENT. The caller-supplied HOME + cwd let tests target a
+ * overrides OMC_CLIENT. We explicitly blank `ZCODE_APP_VERSION`,
+ * `ZCODE_PLUGIN_ROOT`, `ZCODE_PLUGIN_DATA`, `CODEBUDDY_PLUGIN_ROOT`,
+ * `CODEBUDDY_PLUGIN_DIRS`, `CODEBUDDY_PLUGIN_DATA` — `detectClient()` checks
+ * these BEFORE the ambient fallback, so leaking any of them from the host
+ * session would silently route the spawned subprocess to the zcode or
+ * codebuddy branch. The caller-supplied HOME + cwd let tests target a
  * throwaway tmpdir without polluting the developer's real $HOME.
  */
 function runOmcCommand(
@@ -63,12 +68,25 @@ function runOmcCommand(
   const result = spawnSync('node', [binPath, command, ...args], {
     cwd: env.cwd,
     env: {
+      ...process.env,
       HOME: env.HOME ?? '/tmp',
       PATH: process.env.PATH ?? '',
       // Prefer the repo's node_modules so spawned resolves the same deps.
       NODE_PATH: repoNodeModules,
-      // Force auto-detect to land on `claude` unless caller overrides.
+      // Force auto-detect to land on `claude` unless caller overrides OMC_CLIENT.
+      // Also scrub CodeBuddy + ZCode session signatures so a developer running
+      // `npm test` from inside ZCode/CodeBuddy doesn't poison child detection.
       OMC_CLIENT: '',
+      ZCODE_APP_VERSION: '',
+      ZCODE_PLUGIN_ROOT: '',
+      ZCODE_PLUGIN_DATA: '',
+      CODEBUDDY_PLUGIN_ROOT: '',
+      CODEBUDDY_PLUGIN_DIRS: '',
+      CODEBUDDY_PLUGIN_DATA: '',
+      // Caller-supplied overrides from `env` (HOME, cwd, etc.) take precedence
+      // by being spread last — but in this helper HOME is the only override,
+      // and it already won above. Add explicit per-key passthrough if needed.
+      ...env,
     },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
