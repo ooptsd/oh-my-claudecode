@@ -114144,6 +114144,9 @@ Client targeting:
     process.exit(1);
   }
   if (effectiveClient === "zcode") {
+    if (options.pluginDirMode || options.plugin === false) {
+      console.warn(source_default.yellow("--plugin-dir-mode and --no-plugin are not applicable to zcode; ignoring"));
+    }
     const scope = workspaceArg !== void 0 ? "workspace" : "user";
     const workspacePathForResolve = workspaceArg === true ? (0, import_path155.join)(process.cwd(), ".zcode") : workspaceArg;
     const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths(scope, workspacePathForResolve);
