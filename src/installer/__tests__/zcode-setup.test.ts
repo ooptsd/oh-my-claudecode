@@ -102,5 +102,6 @@ describe('setupZcode', () => {
     expect(existsSync(join(zcodeDir, 'skills/demo/SKILL.md'))).toBe(true);
     expect(existsSync(join(zcodeDir, 'commands/ask.md'))).toBe(true);
     expect(existsSync(join(zcodeDir, 'agents/architect.md'))).toBe(true);
+    expect(existsSync(join(home, '.agents/mcp.json'))).toBe(true); // 第 8 步 MCP 合并照常（不受 hooksWanted 影响）
   });
 });

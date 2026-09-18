@@ -4,13 +4,26 @@
  * 可预期失败（包不完整、hooks.enabled 显式 false、agent 单文件失败、AGENTS.md 事务失败）不抛出：
  * 前两者短路返回 success:false，后两者计入 errors。 */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { convertAgentsDir } from './zcode-agents.js';
 import { ZcodeHooksRoot, mergeHooksEvents, mergeOmcMcpServer, readJsonFile, removeOmcFromEnabledPlugins, warnIfNativeMcpShadowing, writeJsonFileAtomic, ZcodeSetupError } from './zcode-config.js';
 import { executeClaudeMdTransaction } from './claude-md-transaction.js';
 import { ZCODE_MEMORY_COMPANION_FILE_NAME, ZCODE_MEMORY_FILE_NAME } from '../utils/memory-file.js';
 
-const PACKAGE_VERSION: string = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')).version;
+/** 包根解析：从本模块位置向上找 package.json（src/installer、dist/installer 上两级；
+ * esbuild CJS 束 import.meta.url 被 shim 到 bridge/cli.cjs，上一级即包根）。
+ * 相对 URL 字面量（new URL('../../package.json', import.meta.url)）在 CJS 束里会解析到包外。 */
+function resolvePackageRoot(): string {
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [join(moduleDir, '..'), join(moduleDir, '..', '..'), join(moduleDir, '..', '..', '..')];
+  for (const candidate of candidates) {
+    if (existsSync(join(candidate, 'package.json'))) return candidate;
+  }
+  return moduleDir;
+}
+
+const PACKAGE_VERSION: string = JSON.parse(readFileSync(join(resolvePackageRoot(), 'package.json'), 'utf-8')).version;
 
 export interface SetupZcodeOptions {
   zcodeDir: string; // 通常是 join(homedir(), '.zcode')

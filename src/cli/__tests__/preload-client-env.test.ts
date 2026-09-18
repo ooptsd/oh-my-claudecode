@@ -246,6 +246,7 @@ describe('zcode preload plan', () => {
     const plan = resolvePreloadPlan(['setup'], { ZCODE_APP_VERSION: '1' });
     expect(plan.client).toBe('zcode');
     expect(plan.env.OMC_CLIENT).toBe('zcode');
+    expect(plan.env.CLAUDE_MCP_CONFIG_PATH).toBeUndefined();
   });
 
   it('claude NOOP surface stays byte-identical (regression)', async () => {
