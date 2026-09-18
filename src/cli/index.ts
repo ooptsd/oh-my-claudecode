@@ -22,8 +22,10 @@ import { Command, Option } from 'commander';
 import chalk from 'chalk';
 import { join } from 'path';
 import { writeFileSync, existsSync } from 'fs';
+import { homedir } from 'os';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
+import { detectClient } from '../utils/client.js';
 import {
   loadConfig,
   getConfigPaths,
@@ -42,8 +44,10 @@ import {
 import {
   install as installOmc,
   isInstalled,
-  getInstallInfo
+  getInstallInfo,
+  getRuntimePackageRoot
 } from '../installer/index.js';
+import { setupZcode } from '../installer/zcode.js';
 import {
   waitCommand,
   waitStatusCommand,
@@ -1306,8 +1310,8 @@ program
   .option('--skip-hooks', 'Skip hook installation')
   .option('--force-hooks', 'Force reinstall hooks even if unchanged')
   .addOption(
-    new Option('--client <client>', 'Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy; default: auto-detect the current session)')
-      .choices(['claude', 'codebuddy'])
+    new Option('--client <client>', 'Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy, zcode: ~/.zcode standalone; default: auto-detect the current session)')
+      .choices(['claude', 'codebuddy', 'zcode'])
   )
   .addHelpText('after', `
 Examples:
@@ -1319,12 +1323,39 @@ Examples:
   $ omc setup --skip-hooks        Install without hooks
   $ omc setup --force-hooks       Force reinstall hooks
   $ omc setup --client codebuddy  Install user-level state into ~/.codebuddy
+  $ omc setup --client zcode      Standalone install into ~/.zcode (skills/commands/agents/hooks/MCP)
 
 Client targeting:
-  --client claude|codebuddy is optional — without it the session is
+  --client claude|codebuddy|zcode is optional — without it the session is
   auto-detected (CodeBuddy sessions install into ~/.codebuddy with
-  CODEBUDDY.md as the memory file; everything else keeps ~/.claude).`)
+  CODEBUDDY.md as the memory file, ZCode sessions standalone-install into
+  ~/.zcode; everything else keeps ~/.claude).`)
   .action(async (options) => {
+    // ZCode dispatch (T7): standalone install into ~/.zcode, bypassing the
+    // Claude/CodeBuddy installer entirely. The preload side effect already
+    // preset CLAUDE_CONFIG_DIR for explicit or auto-detected zcode sessions,
+    // so detectClient() here is deterministic.
+    const effectiveClient = options.client ?? detectClient();
+    if (effectiveClient === 'zcode') {
+      const result = setupZcode({
+        zcodeDir: join(homedir(), '.zcode'),
+        agentsMcpJsonPath: join(homedir(), '.agents', 'mcp.json'),
+        packageDir: getRuntimePackageRoot(),
+        hooksWanted: !options.skipHooks,
+        log: (message) => { if (!options.quiet) console.log(chalk.gray(message)); },
+      });
+      if (!result.success) {
+        console.error(chalk.red(`ZCode setup failed: ${result.message}`));
+        result.errors.forEach((err) => console.error(chalk.red(`  - ${err}`)));
+        process.exit(1);
+      }
+      if (!options.quiet) {
+        console.log(chalk.green('ZCode setup complete!'));
+        console.log(chalk.gray(`skills=${result.deployed.skills} commands=${result.deployed.commands} agents=${result.deployed.agents} hooks=${result.deployed.hooks ? 'wired' : 'skipped'}`));
+      }
+      return;
+    }
+
     if (!options.quiet) {
       console.log(chalk.blue('Oh-My-ClaudeCode Setup\n'));
     }

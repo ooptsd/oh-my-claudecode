@@ -22,3 +22,17 @@ describe('memory file naming', () => {
     expect(getMemoryCompanionFileName({ OMC_CLIENT: 'claude', CODEBUDDY_PLUGIN_ROOT: '/p' })).toBe('CLAUDE-omc.md');
   });
 });
+
+describe('zcode memory file names', () => {
+  it('zcode sessions use AGENTS.md / AGENTS-omc.md', () => {
+    const env = { ZCODE_APP_VERSION: '1' };
+    expect(getMemoryFileName(env)).toBe('AGENTS.md');
+    expect(getMemoryCompanionFileName(env)).toBe('AGENTS-omc.md');
+  });
+  it('claude default is unchanged', () => {
+    expect(getMemoryFileName({})).toBe('CLAUDE.md');
+  });
+  it('codebuddy precedence is unchanged', () => {
+    expect(getMemoryFileName({ CODEBUDDY_PLUGIN_ROOT: '/x', ZCODE_APP_VERSION: '1' })).toBe('CODEBUDDY.md');
+  });
+});
