@@ -11,6 +11,13 @@ import {
 
 const originalHome = process.env.HOME;
 
+describe('test-env hygiene (vitest setup scrubs host ZCODE_* leakage)', () => {
+  it('detectClient() on the ambient process env stays client-neutral', () => {
+    expect(detectClient()).toBe('claude');
+    expect(isZcodeSession()).toBe(false);
+  });
+});
+
 describe('detectClient priority matrix', () => {
   it('defaults to claude when nothing is set', () => {
     expect(detectClient({})).toBe('claude');
