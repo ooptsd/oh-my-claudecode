@@ -43,8 +43,12 @@ vi.mock('../../installer/index.js', async () => {
   return {
     ...actual,
     install: installMock,
-    isInstalled: () => true,
-    getInstallInfo: () => ({ installed: true, version: 'test' }),
+    // T6: setup is now a thin alias to install, so the install command's
+    // isInstalled short-circuit applies. Return false here so the install
+    // action proceeds to call installOmc, exercising the pluginDirMode /
+    // noPlugin precedence logic migrated to install's action body.
+    isInstalled: () => false,
+    getInstallInfo: () => null,
   };
 });
 
