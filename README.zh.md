@@ -126,6 +126,8 @@ omc install --client zcode --workspace   # 工作空间级：写入 <cwd>/.zcode
 
 工作空间模式在 `<cwd>/.zcode/` 下镜像完整的用户级布局（`skills/`、`commands/`、`agents/`、`hooks/`、`AGENTS.md`、`cli/config.json`、`cli/settings.json`、`.agents/mcp.json`），并在工作空间根目录另外写入版本戳 `<cwd>/.omc-version.json`（不在 `.zcode/` 内部）。用户级和工作空间级独立共存；优先级由 ZCode 自身决定。
 
+也可以传入自定义路径：`omc install --client zcode --workspace=/abs/proj/.zcode` 会把 `/abs/proj/.zcode` 整体作为 ZCode 根目录（不会再追加 `.zcode` 后缀）。版本戳 `.omc-version.json` 会落在 `dirname(/abs/proj/.zcode) = /abs/proj/.omc-version.json`——也就是你提供的路径的上一层。如果改为传入 `--workspace=/abs/proj`（不带 `.zcode` 后缀），那么该路径本身就是 ZCode 根目录，版本戳会落在 `/abs/.omc-version.json`（其上一层）。**建议始终带上 `.zcode` 后缀**，以保持与默认 `<cwd>/.zcode/` 布局一致。
+
 ZCode 上子代理生命周期与 PreCompact hooks 不可用（宿主不暴露这些事件）。若在 `cli/config.json` 中配置了原生 MCP server，请注意 ZCode 会跳过 `.agents/mcp.json`。
 
 `omc setup --client zcode [--workspace]` 保留为 `omc install --client zcode [--workspace]` 的薄别名以保持向后兼容。
