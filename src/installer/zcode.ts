@@ -26,8 +26,10 @@ function resolvePackageRoot(): string {
 const PACKAGE_VERSION: string = JSON.parse(readFileSync(join(resolvePackageRoot(), 'package.json'), 'utf-8')).version;
 
 export interface SetupZcodeOptions {
-  zcodeDir: string; // 通常是 join(homedir(), '.zcode')
-  agentsMcpJsonPath: string; // 通常是 join(homedir(), '.agents', 'mcp.json')
+  scope: 'user' | 'workspace'; // user=现有默认行为（~/.zcode）；workspace=项目级（<workspacePath>/.zcode）
+  zcodeDir: string; // 通常是 join(homedir(), '.zcode') 或 join(workspacePath, '.zcode')
+  agentsMcpJsonPath: string; // 通常是 join(homedir(), '.agents', 'mcp.json') 或 <zcodeDir>/.agents/mcp.json
+  workspacePath?: string; // 仅 scope='workspace' 时使用；用于第 1/10 步定位 .omc/ 与 .omc-version.json（顶层，不进 zcodeDir）
   packageDir: string; // npm 包根（含 templates/、docs/、bridge/、skills/、commands/、agents/）
   hooksWanted?: boolean; // 默认 true
   log: (message: string) => void;
@@ -62,10 +64,24 @@ export function setupZcode(options: SetupZcodeOptions): SetupZcodeResult {
 
   // 2 状态引导（仅缺省创建）
   mkdirSync(zcodeDir, { recursive: true });
+  // workspace scope: 顶层 .omc/ state 子目录（spec W6；不进 zcodeDir）
+  if (options.scope === 'workspace' && options.workspacePath) {
+    mkdirSync(join(options.workspacePath, '.omc'), { recursive: true });
+  }
   if (!existsSync(join(zcodeDir, '.omc-config.json'))) {
     writeFileSync(join(zcodeDir, '.omc-config.json'), JSON.stringify({ configuredAt: new Date().toISOString(), setupVersion: `v${PACKAGE_VERSION}`, nodeBinary: process.execPath }, null, 2));
   }
-  writeFileSync(join(zcodeDir, '.omc-version.json'), JSON.stringify({ version: PACKAGE_VERSION, configuredAt: new Date().toISOString() }, null, 2));
+  const versionPayload = {
+    version: PACKAGE_VERSION,
+    installedAt: new Date().toISOString(),
+    ...(options.scope === 'workspace' && options.workspacePath
+      ? { scope: 'workspace' as const, workspacePath: options.workspacePath }
+      : { scope: 'user' as const }),
+  };
+  const versionPath = options.scope === 'workspace' && options.workspacePath
+    ? join(options.workspacePath, '.omc-version.json')
+    : join(zcodeDir, '.omc-version.json');
+  writeFileSync(versionPath, JSON.stringify(versionPayload, null, 2));
 
   // 3 部署 hook 脚本（templates/hooks 全量覆盖式刷新）
   // 4 hooks 接线（备份 + 原子写；enabled:false 由 mergeHooksEvents 抛错中止）
