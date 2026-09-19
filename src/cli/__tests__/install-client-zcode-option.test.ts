@@ -1,12 +1,15 @@
 /**
- * `omc setup --client <claude|codebuddy|zcode>` (T5, zcode dispatch in T7).
+ * `omc install --client <claude|codebuddy|zcode>` (T3, zcode dispatch migrated
+ * from setup).
  *
  * The option exists for discoverability and validation: the actual env preset
  * happens earlier, in the preload side effect (src/cli/preload-client-env.ts),
  * which scans raw argv before commander parses. These tests drive the real
- * commander program and additionally probe the built bundle for the choices
- * validation. The zcode path routes to setupZcode (mocked here) instead of
- * the Claude installer.
+ * commander program and confirm the install command accepts --client zcode
+ * and dispatches to setupZcode with user-level paths. The claude/codebuddy
+ * path must remain byte-identical (installOmc is called with no --client).
+ *
+ * Integration with `omc setup --client zcode` as an alias is verified in T6.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -29,7 +32,7 @@ const installMock = vi.fn(() => ({
 
 const zcodeMock = vi.fn(() => ({
   success: true,
-  message: 'ZCode setup complete',
+  message: 'ZCode install complete',
   errors: [],
   deployed: { hooks: true, skills: 0, commands: 0, agents: 0 },
   pluginsRemoved: [],
@@ -46,10 +49,6 @@ vi.mock('../../installer/index.js', async () => {
   return {
     ...actual,
     install: installMock,
-    // T6: setup is now a thin alias to install, so the install command's
-    // isInstalled short-circuit applies. Return false here so the install
-    // action proceeds to call installOmc (the installMock), matching the
-    // test intent (verify setup's --client path actually runs install).
     isInstalled: () => false,
     getInstallInfo: () => null,
   };
@@ -81,41 +80,40 @@ async function freshProgram() {
   return program;
 }
 
-describe('omc setup --client option', () => {
-  it('accepts --client codebuddy (space form) and still runs install', async () => {
+describe('omc install --client option', () => {
+  it('accepts --client zcode and dispatches to setupZcode with user-level paths', async () => {
     const program = await freshProgram();
-    await program.parseAsync(['setup', '--client', 'codebuddy', '--quiet'], { from: 'user' });
-    expect(installMock).toHaveBeenCalled();
-    const setup = program.commands.find((cmd) => cmd.name() === 'setup');
-    expect(setup?.opts().client).toBe('codebuddy');
-  });
-
-  it('accepts --client=claude (equals form)', async () => {
-    const program = await freshProgram();
-    await program.parseAsync(['setup', '--client=claude', '--quiet'], { from: 'user' });
-    expect(installMock).toHaveBeenCalled();
-    const setup = program.commands.find((cmd) => cmd.name() === 'setup');
-    expect(setup?.opts().client).toBe('claude');
-  });
-
-  it('accepts --client zcode in choices', async () => {
-    const program = await freshProgram();
-    await program.parseAsync(['setup', '--client', 'zcode', '--quiet'], { from: 'user' });
+    await program.parseAsync(['install', '--client', 'zcode', '--quiet'], { from: 'user' });
     expect(installMock).not.toHaveBeenCalled();
     expect(zcodeMock).toHaveBeenCalledTimes(1);
     expect(zcodeMock).toHaveBeenCalledWith(expect.objectContaining({
+      scope: 'user',
       zcodeDir: join(homedir(), '.zcode'),
       agentsMcpJsonPath: join(homedir(), '.agents', 'mcp.json'),
       packageDir: expect.any(String),
-      hooksWanted: true, // 默认接线 hooks
+      hooksWanted: true,
     }));
-    const setup = program.commands.find((cmd) => cmd.name() === 'setup');
-    expect(setup?.opts().client).toBe('zcode');
+    const install = program.commands.find((cmd) => cmd.name() === 'install');
+    expect(install?.opts().client).toBe('zcode');
+  });
+
+  it('accepts --client claude and still routes to installOmc', async () => {
+    const program = await freshProgram();
+    await program.parseAsync(['install', '--client', 'claude', '--quiet'], { from: 'user' });
+    expect(zcodeMock).not.toHaveBeenCalled();
+    expect(installMock).toHaveBeenCalled();
+  });
+
+  it('keeps installOmc path when no --client is given (NOOP for default users)', async () => {
+    const program = await freshProgram();
+    await program.parseAsync(['install', '--quiet'], { from: 'user' });
+    expect(zcodeMock).not.toHaveBeenCalled();
+    expect(installMock).toHaveBeenCalled();
   });
 
   it('passes hooksWanted=false through to setupZcode with --skip-hooks', async () => {
     const program = await freshProgram();
-    await program.parseAsync(['setup', '--client', 'zcode', '--skip-hooks', '--quiet'], { from: 'user' });
+    await program.parseAsync(['install', '--client', 'zcode', '--skip-hooks', '--quiet'], { from: 'user' });
     expect(zcodeMock).toHaveBeenCalledTimes(1);
     expect(zcodeMock).toHaveBeenCalledWith(expect.objectContaining({ hooksWanted: false }));
   });
@@ -123,19 +121,17 @@ describe('omc setup --client option', () => {
   it('rejects unknown clients', async () => {
     const program = await freshProgram();
     await expect(
-      program.parseAsync(['setup', '--client', 'windowmaker'], { from: 'user' }),
+      program.parseAsync(['install', '--client', 'windowmaker'], { from: 'user' }),
     ).rejects.toThrow(/Allowed choices are claude, codebuddy, zcode/);
     expect(installMock).not.toHaveBeenCalled();
     expect(zcodeMock).not.toHaveBeenCalled();
   });
 
-  it('documents auto-detection as the default in the option help', async () => {
-    await freshProgram();
+  it('documents the --client option choices on the install command', async () => {
     const { buildProgram } = await import('../index.js');
-    const setup = buildProgram().commands.find((cmd) => cmd.name() === 'setup');
-    const clientOption = setup?.options.find((option) => option.long === '--client');
+    const install = buildProgram().commands.find((cmd) => cmd.name() === 'install');
+    const clientOption = install?.options.find((option) => option.long === '--client');
     expect(clientOption).toBeDefined();
     expect(clientOption?.argChoices).toEqual(['claude', 'codebuddy', 'zcode']);
-    expect(clientOption?.description).toMatch(/auto-detect/i);
   });
 });

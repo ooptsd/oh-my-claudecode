@@ -24,15 +24,28 @@ function hasCodebuddySessionEnv(env) {
   );
 }
 
+const ZCODE_SESSION_ENV_KEYS = ['ZCODE_APP_VERSION', 'ZCODE_PLUGIN_ROOT', 'ZCODE_PLUGIN_DATA'];
+
+function hasZcodeSessionEnv(env) {
+  return ZCODE_SESSION_ENV_KEYS.some((key) => trimmedEnvValue(env, key) !== '');
+}
+
 export function detectClient(env = process.env) {
   const override = trimmedEnvValue(env, 'OMC_CLIENT');
   if (override === 'codebuddy') return 'codebuddy';
   if (override === 'claude') return 'claude';
-  return hasCodebuddySessionEnv(env) ? 'codebuddy' : 'claude';
+  if (override === 'zcode') return 'zcode';
+  if (hasCodebuddySessionEnv(env)) return 'codebuddy';
+  if (hasZcodeSessionEnv(env)) return 'zcode';
+  return 'claude';
 }
 
 export function isCodebuddySession(env = process.env) {
   return detectClient(env) === 'codebuddy';
+}
+
+export function isZcodeSession(env = process.env) {
+  return detectClient(env) === 'zcode';
 }
 
 /**

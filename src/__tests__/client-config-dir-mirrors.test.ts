@@ -13,13 +13,16 @@
  * same config dir no matter which surface it runs through.
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, execSync, spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { detectClient, resolveClientConfigDir } from '../utils/client.js';
+
+const requireCjs = createRequire(import.meta.url);
 
 const REPO_ROOT = process.cwd();
 const CONFIG_DIR_MJS = join(REPO_ROOT, 'scripts', 'lib', 'config-dir.mjs');
@@ -439,5 +442,50 @@ describe('mirror warning behaviour (caller side)', () => {
     } finally {
       rmSync(fakeHome, { recursive: true, force: true });
     }
+  });
+});
+
+describe('zcode signature resolution across mirrors', () => {
+  const SAVED_ENV: Record<string, string | undefined> = {
+    ZCODE_APP_VERSION: process.env.ZCODE_APP_VERSION,
+    OMC_CLIENT: process.env.OMC_CLIENT,
+    CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
+  };
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(SAVED_ENV)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  // .mjs mirror（动态 import 后断言）
+  it('mjs mirror: zcode signature resolves ~/.zcode over ambient CLAUDE_CONFIG_DIR', async () => {
+    process.env.ZCODE_APP_VERSION = 'test';
+    delete process.env.OMC_CLIENT;
+    process.env.CLAUDE_CONFIG_DIR = '/elsewhere';
+    const { getClaudeConfigDir } = await import(pathToFileURL(CONFIG_DIR_MJS).href);
+    expect(getClaudeConfigDir()).toBe(join(homedir(), '.zcode'));
+  });
+
+  // .cjs mirror（require 后断言）
+  it('cjs mirror: zcode signature resolves ~/.zcode over ambient CLAUDE_CONFIG_DIR', () => {
+    process.env.ZCODE_APP_VERSION = 'test';
+    delete process.env.OMC_CLIENT;
+    process.env.CLAUDE_CONFIG_DIR = '/elsewhere';
+    const { getClaudeConfigDir } = requireCjs(CONFIG_DIR_CJS);
+    expect(getClaudeConfigDir()).toBe(join(homedir(), '.zcode'));
+  });
+
+  // .sh mirror（execSync 执行 resolve_claude_config_dir）
+  it('sh mirror: zcode signature resolves ~/.zcode', () => {
+    const out = execSync(
+      `ZCODE_APP_VERSION=test CLAUDE_CONFIG_DIR=/elsewhere sh -c '. ${CONFIG_DIR_SH}; resolve_claude_config_dir'`,
+      { encoding: 'utf8' },
+    );
+    expect(out.trim()).toBe(join(homedir(), '.zcode'));
   });
 });

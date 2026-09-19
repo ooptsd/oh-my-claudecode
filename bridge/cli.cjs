@@ -36,22 +36,27 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/utils/client.ts
+function hasAnySessionEnv(env2, keys) {
+  return keys.some((key) => trimmedValue(env2, key) !== "");
+}
 function trimmedValue(env2, key) {
   const value = env2[key];
   return typeof value === "string" ? value.trim() : "";
 }
 function detectClient(env2 = process.env) {
   const override = trimmedValue(env2, "OMC_CLIENT");
-  if (override === "codebuddy") {
-    return "codebuddy";
-  }
-  if (override === "claude") {
-    return "claude";
-  }
-  return CODEBUDDY_SESSION_ENV_KEYS.some((key) => trimmedValue(env2, key) !== "") ? "codebuddy" : "claude";
+  if (override === "codebuddy") return "codebuddy";
+  if (override === "claude") return "claude";
+  if (override === "zcode") return "zcode";
+  if (hasAnySessionEnv(env2, CODEBUDDY_SESSION_ENV_KEYS)) return "codebuddy";
+  if (hasAnySessionEnv(env2, ZCODE_SESSION_ENV_KEYS)) return "zcode";
+  return "claude";
 }
 function isCodebuddySession(env2 = process.env) {
   return detectClient(env2) === "codebuddy";
+}
+function isZcodeSession(env2 = process.env) {
+  return detectClient(env2) === "zcode";
 }
 function stripTrailingSep(p) {
   if (!p.endsWith(import_path.sep)) {
@@ -63,6 +68,9 @@ function resolveClientConfigDir(env2 = process.env) {
   const home = (0, import_os.homedir)();
   if (detectClient(env2) === "codebuddy") {
     return stripTrailingSep((0, import_path.normalize)((0, import_path.join)(home, ".codebuddy")));
+  }
+  if (detectClient(env2) === "zcode") {
+    return stripTrailingSep((0, import_path.normalize)((0, import_path.join)(home, ".zcode")));
   }
   const configured = trimmedValue(env2, "CLAUDE_CONFIG_DIR");
   if (!configured) {
@@ -76,7 +84,7 @@ function resolveClientConfigDir(env2 = process.env) {
   }
   return stripTrailingSep((0, import_path.normalize)(configured));
 }
-var import_path, import_os, CODEBUDDY_SESSION_ENV_KEYS;
+var import_path, import_os, CODEBUDDY_SESSION_ENV_KEYS, ZCODE_SESSION_ENV_KEYS;
 var init_client = __esm({
   "src/utils/client.ts"() {
     "use strict";
@@ -86,6 +94,11 @@ var init_client = __esm({
       "CODEBUDDY_PLUGIN_ROOT",
       "CODEBUDDY_PLUGIN_DIRS",
       "CODEBUDDY_PLUGIN_DATA"
+    ];
+    ZCODE_SESSION_ENV_KEYS = [
+      "ZCODE_APP_VERSION",
+      "ZCODE_PLUGIN_ROOT",
+      "ZCODE_PLUGIN_DATA"
     ];
   }
 });
@@ -15681,12 +15694,16 @@ var init_version = __esm({
 
 // src/utils/memory-file.ts
 function getMemoryFileName(env2 = process.env) {
-  return isCodebuddySession(env2) ? CODEBUDDY_MEMORY_FILE_NAME : CLAUDE_MEMORY_FILE_NAME;
+  if (isCodebuddySession(env2)) return CODEBUDDY_MEMORY_FILE_NAME;
+  if (isZcodeSession(env2)) return ZCODE_MEMORY_FILE_NAME;
+  return CLAUDE_MEMORY_FILE_NAME;
 }
 function getMemoryCompanionFileName(env2 = process.env) {
-  return isCodebuddySession(env2) ? CODEBUDDY_MEMORY_COMPANION_FILE_NAME : CLAUDE_MEMORY_COMPANION_FILE_NAME;
+  if (isCodebuddySession(env2)) return CODEBUDDY_MEMORY_COMPANION_FILE_NAME;
+  if (isZcodeSession(env2)) return ZCODE_MEMORY_COMPANION_FILE_NAME;
+  return CLAUDE_MEMORY_COMPANION_FILE_NAME;
 }
-var CLAUDE_MEMORY_FILE_NAME, CLAUDE_MEMORY_COMPANION_FILE_NAME, CODEBUDDY_MEMORY_FILE_NAME, CODEBUDDY_MEMORY_COMPANION_FILE_NAME;
+var CLAUDE_MEMORY_FILE_NAME, CLAUDE_MEMORY_COMPANION_FILE_NAME, CODEBUDDY_MEMORY_FILE_NAME, CODEBUDDY_MEMORY_COMPANION_FILE_NAME, ZCODE_MEMORY_FILE_NAME, ZCODE_MEMORY_COMPANION_FILE_NAME;
 var init_memory_file = __esm({
   "src/utils/memory-file.ts"() {
     "use strict";
@@ -15695,6 +15712,8 @@ var init_memory_file = __esm({
     CLAUDE_MEMORY_COMPANION_FILE_NAME = "CLAUDE-omc.md";
     CODEBUDDY_MEMORY_FILE_NAME = "CODEBUDDY.md";
     CODEBUDDY_MEMORY_COMPANION_FILE_NAME = "CODEBUDDY-omc.md";
+    ZCODE_MEMORY_FILE_NAME = "AGENTS.md";
+    ZCODE_MEMORY_COMPANION_FILE_NAME = "AGENTS-omc.md";
   }
 });
 
@@ -43492,8 +43511,8 @@ async function startMergeOrchestrator(config2) {
   let persisted = { lastShas: {} };
   if ((0, import_node_fs14.existsSync)(persistedPath)) {
     try {
-      const { readFileSync: readFileSync117 } = await import("node:fs");
-      persisted = JSON.parse(readFileSync117(persistedPath, "utf-8"));
+      const { readFileSync: readFileSync120 } = await import("node:fs");
+      persisted = JSON.parse(readFileSync120(persistedPath, "utf-8"));
     } catch {
       persisted = { lastShas: {} };
     }
@@ -43899,8 +43918,8 @@ async function recoverFromRestart(config2) {
   let persistedShasLoaded = 0;
   if ((0, import_node_fs14.existsSync)(persistedPath)) {
     try {
-      const { readFileSync: readFileSync117 } = await import("node:fs");
-      const persisted = JSON.parse(readFileSync117(persistedPath, "utf-8"));
+      const { readFileSync: readFileSync120 } = await import("node:fs");
+      const persisted = JSON.parse(readFileSync120(persistedPath, "utf-8"));
       persistedShasLoaded = Object.keys(persisted.lastShas ?? {}).length;
     } catch {
       persistedShasLoaded = 0;
@@ -47732,7 +47751,7 @@ async function processCliWorkerVerdicts(teamName, cwd2) {
     "team.runtime-v2.processCliWorkerVerdicts appendTeamEvent failed"
   );
   const { rename: rename7 } = await import("fs/promises");
-  const { readFileSync: readFileSync117, writeFileSync: writeFileSync47, existsSync: fsExistsSync } = await import("fs");
+  const { readFileSync: readFileSync120, writeFileSync: writeFileSync50, existsSync: fsExistsSync } = await import("fs");
   const { withFileLockSync: withFileLockSync2 } = await Promise.resolve().then(() => (init_file_lock(), file_lock_exports));
   for (const worker of config2.workers) {
     const outputFile = worker.output_file;
@@ -47766,7 +47785,7 @@ async function processCliWorkerVerdicts(teamName, cwd2) {
       const taskPath2 = absPath(cwd2, TeamPaths.taskFile(sanitized, taskId));
       if (!fsExistsSync(taskPath2)) continue;
       try {
-        const taskRaw = readFileSync117(taskPath2, "utf-8");
+        const taskRaw = readFileSync120(taskPath2, "utf-8");
         const taskData = JSON.parse(taskRaw);
         if (taskData.owner === worker.name && taskData.status === "in_progress") {
           targetTaskId = taskId;
@@ -47794,7 +47813,7 @@ async function processCliWorkerVerdicts(teamName, cwd2) {
     let transitionOk = false;
     try {
       withFileLockSync2(targetTaskPath + ".lock", () => {
-        const raw = readFileSync117(targetTaskPath, "utf-8");
+        const raw = readFileSync120(targetTaskPath, "utf-8");
         const taskData = JSON.parse(raw);
         if (taskData.status !== "in_progress" || taskData.owner !== worker.name) {
           return;
@@ -47814,7 +47833,7 @@ async function processCliWorkerVerdicts(teamName, cwd2) {
         if (terminalStatus === "failed") {
           taskData.error = `cli_worker_verdict:${payload.verdict}:${payload.summary}`;
         }
-        writeFileSync47(targetTaskPath, JSON.stringify(taskData, null, 2), "utf-8");
+        writeFileSync50(targetTaskPath, JSON.stringify(taskData, null, 2), "utf-8");
         transitionOk = true;
       });
     } catch {
@@ -61853,7 +61872,7 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
   let displayPath;
   switch (format) {
     case "relative": {
-      const home = (0, import_node_os5.homedir)().replace(/\\/g, "/");
+      const home = (0, import_node_os6.homedir)().replace(/\\/g, "/");
       const normalizedCwd = cwd2.replace(/\\/g, "/");
       if (normalizedCwd === home) {
         displayPath = "~";
@@ -61868,8 +61887,8 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
       displayPath = cwd2;
       break;
     case "folder": {
-      const parent = (0, import_node_path28.basename)((0, import_node_path28.dirname)(cwd2));
-      const folder = (0, import_node_path28.basename)(cwd2);
+      const parent = (0, import_node_path32.basename)((0, import_node_path32.dirname)(cwd2));
+      const folder = (0, import_node_path32.basename)(cwd2);
       displayPath = parent ? `${parent}/${folder}` : folder;
       break;
     }
@@ -61883,29 +61902,29 @@ function renderCwd(cwd2, format = "relative", useHyperlinks = false) {
   }
   return rendered;
 }
-var import_node_os5, import_node_path28;
+var import_node_os6, import_node_path32;
 var init_cwd = __esm({
   "src/hud/elements/cwd.ts"() {
     "use strict";
-    import_node_os5 = require("node:os");
-    import_node_path28 = require("node:path");
+    import_node_os6 = require("node:os");
+    import_node_path32 = require("node:path");
     init_colors();
   }
 });
 
 // src/hud/elements/hostname.ts
 function renderHostname() {
-  const full = (0, import_node_os6.hostname)();
+  const full = (0, import_node_os7.hostname)();
   if (!full) return null;
   const short = full.split(".")[0];
   if (!short) return null;
   return cyan(`host:${short}`);
 }
-var import_node_os6;
+var import_node_os7;
 var init_hostname = __esm({
   "src/hud/elements/hostname.ts"() {
     "use strict";
-    import_node_os6 = require("node:os");
+    import_node_os7 = require("node:os");
     init_colors();
   }
 });
@@ -61921,7 +61940,7 @@ function git2(args, cwd2) {
   }).trim();
 }
 function getGitRepoName(cwd2) {
-  const key = cwd2 ? (0, import_node_path29.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = repoCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61942,7 +61961,7 @@ function getGitRepoName(cwd2) {
   return result;
 }
 function getGitBranch(cwd2) {
-  const key = cwd2 ? (0, import_node_path29.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = branchCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61958,7 +61977,7 @@ function getGitBranch(cwd2) {
   return result;
 }
 function getWorktreeInfo(cwd2) {
-  const key = cwd2 ? (0, import_node_path29.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = worktreeCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -61967,18 +61986,18 @@ function getWorktreeInfo(cwd2) {
   try {
     const gitDir = git2(["rev-parse", "--git-dir"], cwd2);
     const gitCommonDir = git2(["rev-parse", "--git-common-dir"], cwd2);
-    let resolvedGitDir = (0, import_node_path29.resolve)(key, gitDir);
-    let resolvedCommonDir = (0, import_node_path29.resolve)(key, gitCommonDir);
+    let resolvedGitDir = (0, import_node_path33.resolve)(key, gitDir);
+    let resolvedCommonDir = (0, import_node_path33.resolve)(key, gitCommonDir);
     try {
-      resolvedGitDir = (0, import_node_fs24.realpathSync)(resolvedGitDir);
+      resolvedGitDir = (0, import_node_fs27.realpathSync)(resolvedGitDir);
     } catch {
     }
     try {
-      resolvedCommonDir = (0, import_node_fs24.realpathSync)(resolvedCommonDir);
+      resolvedCommonDir = (0, import_node_fs27.realpathSync)(resolvedCommonDir);
     } catch {
     }
     if (resolvedGitDir !== resolvedCommonDir) {
-      result = { isWorktree: true, worktreeName: (0, import_node_path29.basename)(resolvedGitDir) };
+      result = { isWorktree: true, worktreeName: (0, import_node_path33.basename)(resolvedGitDir) };
     }
   } catch {
   }
@@ -62000,7 +62019,7 @@ function renderGitBranch(cwd2) {
   return `${dim("branch:")}${cyan(branch)}`;
 }
 function getGitStatusCounts(cwd2) {
-  const key = cwd2 ? (0, import_node_path29.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path33.resolve)(cwd2) : process.cwd();
   const cached2 = statusCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -62051,13 +62070,13 @@ function renderGitStatus(cwd2, labels = DEFAULT_HUD_LABELS) {
   if (behind > 0) parts.push(`${red(labels.behind)}${behind}`);
   return parts.join(" ");
 }
-var import_node_child_process14, import_node_fs24, import_node_path29, CACHE_TTL_MS3, repoCache, branchCache, worktreeCache, statusCache;
+var import_node_child_process14, import_node_fs27, import_node_path33, CACHE_TTL_MS3, repoCache, branchCache, worktreeCache, statusCache;
 var init_git = __esm({
   "src/hud/elements/git.ts"() {
     "use strict";
     import_node_child_process14 = require("node:child_process");
-    import_node_fs24 = require("node:fs");
-    import_node_path29 = require("node:path");
+    import_node_fs27 = require("node:fs");
+    import_node_path33 = require("node:path");
     init_colors();
     init_types6();
     CACHE_TTL_MS3 = 3e4;
@@ -62084,27 +62103,27 @@ function isGitRepo(dir) {
   }
 }
 function looksLikeRepo(entryPath) {
-  return (0, import_node_fs25.existsSync)((0, import_node_path30.join)(entryPath, ".git"));
+  return (0, import_node_fs28.existsSync)((0, import_node_path34.join)(entryPath, ".git"));
 }
 function countActiveSessions(cwd2) {
-  const sessionsDir = (0, import_node_path30.join)(getOmcRoot(cwd2), "state", "sessions");
-  if (!(0, import_node_fs25.existsSync)(sessionsDir)) return 0;
+  const sessionsDir = (0, import_node_path34.join)(getOmcRoot(cwd2), "state", "sessions");
+  if (!(0, import_node_fs28.existsSync)(sessionsDir)) return 0;
   const now = Date.now();
   let active = 0;
   try {
-    const entries = (0, import_node_fs25.readdirSync)(sessionsDir, { withFileTypes: true });
+    const entries = (0, import_node_fs28.readdirSync)(sessionsDir, { withFileTypes: true });
     for (const entry2 of entries) {
       if (!entry2.isDirectory()) continue;
       if (!SESSION_ID_PATTERN.test(entry2.name)) continue;
-      const dirPath = (0, import_node_path30.join)(sessionsDir, entry2.name);
+      const dirPath = (0, import_node_path34.join)(sessionsDir, entry2.name);
       let fresh = false;
       try {
-        if (now - (0, import_node_fs25.statSync)(dirPath).mtimeMs < ACTIVITY_WINDOW_MS) {
+        if (now - (0, import_node_fs28.statSync)(dirPath).mtimeMs < ACTIVITY_WINDOW_MS) {
           fresh = true;
         } else {
-          for (const f of (0, import_node_fs25.readdirSync)(dirPath)) {
+          for (const f of (0, import_node_fs28.readdirSync)(dirPath)) {
             try {
-              if (now - (0, import_node_fs25.statSync)((0, import_node_path30.join)(dirPath, f)).mtimeMs < ACTIVITY_WINDOW_MS) {
+              if (now - (0, import_node_fs28.statSync)((0, import_node_path34.join)(dirPath, f)).mtimeMs < ACTIVITY_WINDOW_MS) {
                 fresh = true;
                 break;
               }
@@ -62122,7 +62141,7 @@ function countActiveSessions(cwd2) {
   return active;
 }
 function detectMultiRepo(cwd2) {
-  const key = cwd2 ? (0, import_node_path30.resolve)(cwd2) : process.cwd();
+  const key = cwd2 ? (0, import_node_path34.resolve)(cwd2) : process.cwd();
   const cached2 = multiRepoCache.get(key);
   if (cached2 && Date.now() < cached2.expiresAt) {
     return cached2.value;
@@ -62135,11 +62154,11 @@ function detectMultiRepo(cwd2) {
     }
     let subrepoCount = 0;
     try {
-      const entries = (0, import_node_fs25.readdirSync)(key, { withFileTypes: true });
+      const entries = (0, import_node_fs28.readdirSync)(key, { withFileTypes: true });
       for (const entry2 of entries) {
         if (!entry2.isDirectory()) continue;
         if (entry2.name.startsWith(".")) continue;
-        if (looksLikeRepo((0, import_node_path30.join)(key, entry2.name))) subrepoCount++;
+        if (looksLikeRepo((0, import_node_path34.join)(key, entry2.name))) subrepoCount++;
       }
     } catch {
     }
@@ -62147,12 +62166,12 @@ function detectMultiRepo(cwd2) {
       multiRepoCache.set(key, { value: null, expiresAt: Date.now() + CACHE_TTL_MS4 });
       return null;
     }
-    const hasMarker = (0, import_node_fs25.existsSync)((0, import_node_path30.join)(key, ".omc-workspace"));
+    const hasMarker = (0, import_node_fs28.existsSync)((0, import_node_path34.join)(key, ".omc-workspace"));
     const activeSessions = hasMarker ? countActiveSessions(key) : 0;
     result = {
       isMultiRepo: true,
       hasMarker,
-      parentName: (0, import_node_path30.basename)(key),
+      parentName: (0, import_node_path34.basename)(key),
       subrepoCount,
       activeSessions
     };
@@ -62171,13 +62190,13 @@ function renderMultiRepo(cwd2) {
   const sessionsPart = info.activeSessions > 0 ? ` ${dim("sessions:~")}${green(String(info.activeSessions))}` : ` ${dim("sessions:~")}${dim("0")}`;
   return `${dim("mr:")}${cyan(info.parentName)} ${dim("repos:")}${cyan(String(info.subrepoCount))}` + sessionsPart;
 }
-var import_node_child_process15, import_node_fs25, import_node_path30, ACTIVITY_WINDOW_MS, SESSION_ID_PATTERN, CACHE_TTL_MS4, multiRepoCache;
+var import_node_child_process15, import_node_fs28, import_node_path34, ACTIVITY_WINDOW_MS, SESSION_ID_PATTERN, CACHE_TTL_MS4, multiRepoCache;
 var init_multi_repo = __esm({
   "src/hud/elements/multi-repo.ts"() {
     "use strict";
     import_node_child_process15 = require("node:child_process");
-    import_node_fs25 = require("node:fs");
-    import_node_path30 = require("node:path");
+    import_node_fs28 = require("node:fs");
+    import_node_path34 = require("node:path");
     init_colors();
     init_worktree_paths();
     ACTIVITY_WINDOW_MS = 5 * 60 * 1e3;
@@ -63363,7 +63382,7 @@ var import_os2 = require("os");
 var import_path2 = require("path");
 init_client();
 var CLIENT_FLAG = "--client";
-var VALID_CLIENTS = ["claude", "codebuddy"];
+var VALID_CLIENTS = ["claude", "codebuddy", "zcode"];
 function parseClientFlagArgv(argv) {
   let flagged;
   for (let index = 0; index < argv.length; index += 1) {
@@ -63408,6 +63427,19 @@ function buildCodebuddyPlan(env2) {
     autoDetectionSkipped: false
   };
 }
+function buildZcodePlan(env2) {
+  const configDir = (0, import_path2.normalize)((0, import_path2.join)((0, import_os2.homedir)(), ".zcode"));
+  const overridden = [];
+  const recordOverridden = (key, nextValue) => {
+    const existing = trimmed(env2, key);
+    if (existing && (0, import_path2.normalize)(existing) !== (0, import_path2.normalize)(nextValue)) {
+      overridden.push(`${key}="${existing}"`);
+    }
+  };
+  recordOverridden("CLAUDE_CONFIG_DIR", configDir);
+  const warnings = overridden.length > 0 ? [`[omc] ZCode client preset is overriding explicitly set environment variables: ${overridden.join(", ")} (set OMC_CLIENT=claude to keep them)`] : [];
+  return { client: "zcode", env: { CLAUDE_CONFIG_DIR: configDir, OMC_CLIENT: "zcode" }, warnings, autoDetectionSkipped: false };
+}
 var NOOP_PLAN = {
   client: null,
   env: {},
@@ -63419,6 +63451,9 @@ function resolvePreloadPlan(argv, env2 = process.env) {
   if (flagged === "codebuddy") {
     return buildCodebuddyPlan(env2);
   }
+  if (flagged === "zcode") {
+    return buildZcodePlan(env2);
+  }
   if (flagged === "claude") {
     return { client: "claude", env: { OMC_CLIENT: "claude" }, warnings: [], autoDetectionSkipped: false };
   }
@@ -63426,7 +63461,10 @@ function resolvePreloadPlan(argv, env2 = process.env) {
   if (autoDetectionSkipped) {
     return { ...NOOP_PLAN, autoDetectionSkipped: true };
   }
-  return detectClient(env2) === "codebuddy" ? buildCodebuddyPlan(env2) : NOOP_PLAN;
+  const detected = detectClient(env2);
+  if (detected === "codebuddy") return buildCodebuddyPlan(env2);
+  if (detected === "zcode") return buildZcodePlan(env2);
+  return NOOP_PLAN;
 }
 function applyPreloadPlan(plan, env2 = process.env, writeWarning = (message2) => {
   process.stderr.write(`${message2}
@@ -63958,6 +63996,7 @@ var import_path155 = require("path");
 var import_fs134 = require("fs");
 init_config_dir();
 init_env_vars();
+init_client();
 init_loader();
 
 // src/index.ts
@@ -106280,6 +106319,344 @@ ${options.customSystemPrompt}`;
 init_auto_update();
 init_installer();
 
+// src/installer/zcode.ts
+var import_node_fs20 = require("node:fs");
+var import_node_path24 = require("node:path");
+var import_node_url = require("node:url");
+
+// src/installer/zcode-agents.ts
+var import_node_fs18 = require("node:fs");
+var import_node_path22 = require("node:path");
+var KEEP_KEYS = ["name", "description", "tools", "disallowedTools"];
+var LIST_KEYS = /* @__PURE__ */ new Set(["tools", "disallowedTools"]);
+function splitFrontmatter(source) {
+  if (!source.startsWith("---")) return null;
+  const end = source.indexOf("\n---", 3);
+  if (end === -1) return null;
+  const afterBar = source.indexOf("\n", end + 1);
+  if (afterBar === -1) return null;
+  return {
+    lines: source.slice(4, end).split("\n"),
+    body: source.slice(afterBar + 1)
+  };
+}
+function parseField(line) {
+  const idx = line.indexOf(":");
+  if (idx === -1) return null;
+  return { key: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
+}
+function toList(value) {
+  return value.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
+}
+function convertClaudeAgentToZcodeAgent(source) {
+  const parsed = splitFrontmatter(source);
+  if (!parsed) return source;
+  const fields = /* @__PURE__ */ new Map();
+  for (const line of parsed.lines) {
+    const field = parseField(line);
+    if (field === null || !KEEP_KEYS.includes(field.key)) continue;
+    if (LIST_KEYS.has(field.key)) {
+      const list = toList(field.value);
+      if (list.length > 0) fields.set(field.key, list);
+    } else if (field.value.length > 0) {
+      fields.set(field.key, [field.value]);
+    }
+  }
+  const out = ["---"];
+  for (const key of KEEP_KEYS) {
+    const values = fields.get(key);
+    if (!values) continue;
+    if (LIST_KEYS.has(key)) {
+      out.push(`${key}:`);
+      for (const item of values) out.push(`  - ${item}`);
+    } else {
+      out.push(`${key}: ${values[0]}`);
+    }
+  }
+  out.push("---", "");
+  return `${out.join("\n")}${parsed.body}`;
+}
+function convertAgentsDir(sourceDir, targetDir) {
+  const results = [];
+  (0, import_node_fs18.mkdirSync)(targetDir, { recursive: true });
+  for (const entry2 of (0, import_node_fs18.readdirSync)(sourceDir)) {
+    if (!entry2.endsWith(".md")) continue;
+    try {
+      const source = (0, import_node_fs18.readFileSync)((0, import_node_path22.join)(sourceDir, entry2), "utf-8");
+      (0, import_node_fs18.writeFileSync)((0, import_node_path22.join)(targetDir, entry2), convertClaudeAgentToZcodeAgent(source), "utf-8");
+      results.push({ name: entry2, ok: true });
+    } catch (error2) {
+      results.push({ name: entry2, ok: false, error: String(error2) });
+    }
+  }
+  return results;
+}
+
+// src/installer/zcode-config.ts
+var import_node_fs19 = require("node:fs");
+var import_node_path23 = require("node:path");
+var ZcodeSetupError = class extends Error {
+};
+var HOOK_SCRIPTS = {
+  UserPromptSubmit: ["keyword-detector.mjs"],
+  SessionStart: ["session-start.mjs"],
+  PreToolUse: ["pre-tool-use.mjs"],
+  PostToolUse: ["post-tool-use.mjs"],
+  PostToolUseFailure: ["post-tool-use-failure.mjs"],
+  Stop: ["persistent-mode.mjs", "code-simplifier.mjs"]
+};
+function buildZcodeHooksConfig(hooksDir) {
+  return {
+    enabled: true,
+    events: Object.fromEntries(
+      Object.entries(HOOK_SCRIPTS).map(([event, scripts]) => [
+        event,
+        scripts.map(
+          (script) => ({
+            hooks: [{ type: "process", command: "node", args: [(0, import_node_path23.join)(hooksDir, script)] }]
+          })
+        )
+      ])
+    )
+  };
+}
+function isOmcEntry(entry2, hooksDir) {
+  try {
+    const json = JSON.stringify(entry2);
+    return json.includes(hooksDir);
+  } catch {
+    return false;
+  }
+}
+function mergeHooksEvents(existing, zcodeHooksDir) {
+  const root2 = typeof existing === "object" && existing !== null ? { ...existing } : {};
+  if (root2["enabled"] === false) {
+    throw new ZcodeSetupError("hooks.enabled is explicitly false in ~/.zcode/cli/config.json; OMC will not override it. Remove the flag or enable hooks first.");
+  }
+  const prevEvents = root2["events"] && typeof root2["events"] === "object" ? root2["events"] : {};
+  const next = buildZcodeHooksConfig(zcodeHooksDir);
+  const events = {};
+  for (const [event, omcEntries] of Object.entries(next.events)) {
+    const kept = (Array.isArray(prevEvents[event]) ? prevEvents[event] : []).filter((e) => !isOmcEntry(e, zcodeHooksDir));
+    events[event] = [...kept, ...omcEntries];
+  }
+  for (const [event, entries] of Object.entries(prevEvents)) {
+    if (events[event] === void 0) events[event] = entries;
+  }
+  root2["enabled"] = root2["enabled"] === void 0 ? true : root2["enabled"];
+  root2["events"] = events;
+  return root2;
+}
+function readJsonFile2(path27) {
+  let raw;
+  try {
+    raw = (0, import_node_fs19.readFileSync)(path27, "utf-8");
+  } catch (error2) {
+    if (error2.code === "ENOENT") return null;
+    throw error2;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error2) {
+    throw new ZcodeSetupError(`Invalid JSON in ${path27}: ${String(error2)}`);
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new ZcodeSetupError(`${path27} must contain a JSON object at top level`);
+  }
+  return parsed;
+}
+function writeJsonFileAtomic(path27, value, backupSuffix = ".omc-bak") {
+  (0, import_node_fs19.mkdirSync)((0, import_node_path23.dirname)(path27), { recursive: true });
+  let backup = "";
+  if ((0, import_node_fs19.existsSync)(path27)) {
+    backup = `${path27}${backupSuffix}`;
+    (0, import_node_fs19.copyFileSync)(path27, backup);
+  }
+  const tmp = `${path27}.tmp-${process.pid}`;
+  (0, import_node_fs19.writeFileSync)(tmp, JSON.stringify(value, null, 2), "utf-8");
+  (0, import_node_fs19.renameSync)(tmp, path27);
+  return backup;
+}
+function removeOmcFromEnabledPlugins(config2) {
+  const next = { ...config2 };
+  const removed = [];
+  const plugins = next.plugins;
+  if (!plugins || typeof plugins !== "object" || Array.isArray(plugins)) return { config: next, removed };
+  const source = plugins;
+  const enabled = source.enabledPlugins;
+  if (!enabled || typeof enabled !== "object" || Array.isArray(enabled)) return { config: next, removed };
+  const nextEnabled = { ...enabled };
+  for (const key of Object.keys(nextEnabled)) {
+    if (key.startsWith("oh-my-claudecode@")) {
+      delete nextEnabled[key];
+      removed.push(key);
+    }
+  }
+  if (removed.length > 0) {
+    next.plugins = { ...source, enabledPlugins: nextEnabled };
+  }
+  return { config: next, removed };
+}
+function mergeOmcMcpServer(mcpJsonPath, bridgeScript) {
+  const existing = readJsonFile2(mcpJsonPath) ?? {};
+  const serversRaw = existing["mcpServers"];
+  const servers = serversRaw && typeof serversRaw === "object" && !Array.isArray(serversRaw) ? serversRaw : {};
+  const omc = { command: "node", args: [bridgeScript] };
+  if (JSON.stringify(servers["omc"]) === JSON.stringify(omc)) return { wrote: false };
+  const backup = writeJsonFileAtomic(mcpJsonPath, { mcpServers: { ...servers, omc } });
+  return { wrote: true, backup: backup || void 0 };
+}
+function warnIfNativeMcpShadowing(configJsonPath, log3) {
+  const config2 = readJsonFile2(configJsonPath);
+  if (!config2) return;
+  const mcp = config2["mcp"];
+  if (!mcp || typeof mcp !== "object" || Array.isArray(mcp)) return;
+  const servers = mcp["servers"];
+  if (!servers || typeof servers !== "object" || Array.isArray(servers)) return;
+  if (Object.keys(servers).length === 0) return;
+  log3(`Native mcp.servers entries found in ${configJsonPath}; ZCode gives native entries precedence, so the ~/.agents/mcp.json fallback (OMC bridge server) is skipped while native servers exist.`);
+}
+
+// src/installer/zcode.ts
+init_claude_md_transaction();
+init_memory_file();
+function resolvePackageRoot() {
+  const moduleDir = (0, import_node_path24.dirname)((0, import_node_url.fileURLToPath)(importMetaUrl));
+  const candidates = [(0, import_node_path24.join)(moduleDir, ".."), (0, import_node_path24.join)(moduleDir, "..", ".."), (0, import_node_path24.join)(moduleDir, "..", "..", "..")];
+  for (const candidate of candidates) {
+    if ((0, import_node_fs20.existsSync)((0, import_node_path24.join)(candidate, "package.json"))) return candidate;
+  }
+  return moduleDir;
+}
+var PACKAGE_VERSION = JSON.parse((0, import_node_fs20.readFileSync)((0, import_node_path24.join)(resolvePackageRoot(), "package.json"), "utf-8")).version;
+function countDirs(dir) {
+  try {
+    return (0, import_node_fs20.readdirSync)(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).length;
+  } catch {
+    return 0;
+  }
+}
+function countMd(dir) {
+  try {
+    return (0, import_node_fs20.readdirSync)(dir, { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".md")).length;
+  } catch {
+    return 0;
+  }
+}
+function setupZcode(options) {
+  const { zcodeDir, agentsMcpJsonPath, packageDir, log: log3 } = options;
+  const errors = [];
+  const cliConfigPath = (0, import_node_path24.join)(zcodeDir, "cli", "config.json");
+  for (const required2 of [(0, import_node_path24.join)(packageDir, "templates/hooks"), (0, import_node_path24.join)(packageDir, "skills"), (0, import_node_path24.join)(packageDir, "commands"), (0, import_node_path24.join)(packageDir, "agents"), (0, import_node_path24.join)(packageDir, "docs/CLAUDE.md"), (0, import_node_path24.join)(packageDir, "bridge/mcp-server.cjs")]) {
+    if (!(0, import_node_fs20.existsSync)(required2)) {
+      return { success: false, message: `package incomplete: missing ${required2}`, errors: [`missing ${(0, import_node_path24.basename)(required2)}`], deployed: { hooks: false, skills: 0, commands: 0, agents: 0 }, pluginsRemoved: [] };
+    }
+  }
+  (0, import_node_fs20.mkdirSync)(zcodeDir, { recursive: true });
+  if (options.scope === "workspace" && options.workspacePath) {
+    (0, import_node_fs20.mkdirSync)((0, import_node_path24.join)(options.workspacePath, ".omc"), { recursive: true });
+  }
+  if (!(0, import_node_fs20.existsSync)((0, import_node_path24.join)(zcodeDir, ".omc-config.json"))) {
+    (0, import_node_fs20.writeFileSync)((0, import_node_path24.join)(zcodeDir, ".omc-config.json"), JSON.stringify({ configuredAt: (/* @__PURE__ */ new Date()).toISOString(), setupVersion: `v${PACKAGE_VERSION}`, nodeBinary: process.execPath }, null, 2));
+  }
+  const versionPayload = {
+    version: PACKAGE_VERSION,
+    installedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    ...options.scope === "workspace" && options.workspacePath ? { scope: "workspace", workspacePath: options.workspacePath } : { scope: "user" }
+  };
+  const versionPath = options.scope === "workspace" && options.workspacePath ? (0, import_node_path24.join)(options.workspacePath, ".omc-version.json") : (0, import_node_path24.join)(zcodeDir, ".omc-version.json");
+  (0, import_node_fs20.writeFileSync)(versionPath, JSON.stringify(versionPayload, null, 2));
+  let hooksWrote = false;
+  if (options.hooksWanted !== false) {
+    const hooksDir = (0, import_node_path24.join)(zcodeDir, "hooks");
+    (0, import_node_fs20.cpSync)((0, import_node_path24.join)(packageDir, "templates", "hooks"), hooksDir, { recursive: true, force: true });
+    log3(`Deployed hook scripts to ${hooksDir}`);
+    try {
+      const existing = readJsonFile2(cliConfigPath) ?? {};
+      (0, import_node_fs20.mkdirSync)((0, import_node_path24.join)(zcodeDir, "cli"), { recursive: true });
+      const hooksSectionRaw = existing["hooks"];
+      const hooksSection = hooksSectionRaw !== null && typeof hooksSectionRaw === "object" && !Array.isArray(hooksSectionRaw) ? hooksSectionRaw : {};
+      const merged = mergeHooksEvents(hooksSection, hooksDir);
+      const backup = writeJsonFileAtomic(cliConfigPath, { ...existing, hooks: merged });
+      hooksWrote = true;
+      log3(backup ? `Wrote ${cliConfigPath} (backup: ${backup})` : `Wrote ${cliConfigPath}`);
+    } catch (error2) {
+      if (error2 instanceof ZcodeSetupError) {
+        return { success: false, message: error2.message, errors: [error2.message], deployed: { hooks: false, skills: 0, commands: 0, agents: 0 }, pluginsRemoved: [] };
+      }
+      throw error2;
+    }
+  }
+  (0, import_node_fs20.cpSync)((0, import_node_path24.join)(packageDir, "skills"), (0, import_node_path24.join)(zcodeDir, "skills"), { recursive: true, force: true });
+  (0, import_node_fs20.cpSync)((0, import_node_path24.join)(packageDir, "commands"), (0, import_node_path24.join)(zcodeDir, "commands"), { recursive: true, force: true });
+  const agentResults = convertAgentsDir((0, import_node_path24.join)(packageDir, "agents"), (0, import_node_path24.join)(zcodeDir, "agents"));
+  const agentFailures = agentResults.filter((r) => !r.ok);
+  for (const failure3 of agentFailures) errors.push(`agent ${failure3.name}: ${failure3.error}`);
+  try {
+    warnIfNativeMcpShadowing(cliConfigPath, log3);
+  } catch (error2) {
+    if (error2 instanceof ZcodeSetupError) errors.push(error2.message);
+    else throw error2;
+  }
+  try {
+    mergeOmcMcpServer(agentsMcpJsonPath, (0, import_node_path24.join)(packageDir, "bridge", "mcp-server.cjs"));
+  } catch (error2) {
+    if (error2 instanceof ZcodeSetupError) errors.push(error2.message);
+    else throw error2;
+  }
+  const transaction = executeClaudeMdTransaction({
+    mode: "global-overwrite",
+    root: zcodeDir,
+    source: (0, import_node_path24.join)(packageDir, "docs", "CLAUDE.md"),
+    sourceRoot: packageDir,
+    version: `v${PACKAGE_VERSION}`,
+    memoryFileName: ZCODE_MEMORY_FILE_NAME,
+    companionFileName: ZCODE_MEMORY_COMPANION_FILE_NAME
+  });
+  if (!transaction.ok) errors.push(`AGENTS.md transaction failed: ${transaction.error ?? "unknown"}`);
+  let configAfter = {};
+  try {
+    configAfter = readJsonFile2(cliConfigPath) ?? {};
+  } catch (error2) {
+    if (!(error2 instanceof ZcodeSetupError)) throw error2;
+  }
+  const { config: configFinal, removed } = removeOmcFromEnabledPlugins(configAfter);
+  if (removed.length > 0) writeJsonFileAtomic(cliConfigPath, configFinal);
+  for (const name of removed) log3(`Disabled marketplace plugin: ${name}`);
+  log3("Done. Restart ZCode sessions to pick up the new hooks snapshot.");
+  return {
+    success: errors.length === 0,
+    message: errors.length === 0 ? "ZCode setup complete" : `ZCode setup completed with ${errors.length} error(s)`,
+    errors,
+    deployed: { hooks: hooksWrote, skills: countDirs((0, import_node_path24.join)(zcodeDir, "skills")), commands: countMd((0, import_node_path24.join)(zcodeDir, "commands")), agents: agentResults.filter((r) => r.ok).length },
+    pluginsRemoved: removed
+  };
+}
+
+// src/utils/zcode-paths.ts
+var import_node_os5 = require("node:os");
+var import_node_path25 = require("node:path");
+function resolveZcodePaths(scope, workspacePath) {
+  if (scope === "workspace") {
+    if (workspacePath !== void 0) {
+      return {
+        zcodeDir: workspacePath,
+        agentsMcpJsonPath: `${workspacePath}/.agents/mcp.json`
+      };
+    }
+    const zcodeDir = (0, import_node_path25.join)(process.cwd(), ".zcode");
+    return {
+      zcodeDir,
+      agentsMcpJsonPath: (0, import_node_path25.join)(zcodeDir, ".agents", "mcp.json")
+    };
+  }
+  return {
+    zcodeDir: (0, import_node_path25.join)((0, import_node_os5.homedir)(), ".zcode"),
+    agentsMcpJsonPath: (0, import_node_path25.join)((0, import_node_os5.homedir)(), ".agents", "mcp.json")
+  };
+}
+
 // src/features/rate-limit-wait/rate-limit-monitor.ts
 init_usage_api();
 var RATE_LIMIT_THRESHOLD = 100;
@@ -108219,8 +108596,8 @@ function inferDelegationPlanForTeamTask(text) {
 
 // src/cli/commands/team.ts
 init_loader();
-var import_node_fs18 = require("node:fs");
-var import_node_path22 = require("node:path");
+var import_node_fs21 = require("node:fs");
+var import_node_path26 = require("node:path");
 init_tmux_utils();
 init_worktree_paths();
 var HELP_TOKENS = /* @__PURE__ */ new Set(["--help", "-h", "help"]);
@@ -108395,13 +108772,13 @@ function slugifyTask(task) {
 }
 function resolveAvailableTeamName(baseName, cwd2) {
   const sanitizedBase = slugifyTask(baseName);
-  const stateRoot2 = (0, import_node_path22.join)(getOmcRoot(cwd2), "state", "team");
-  const teamDir3 = (name) => (0, import_node_path22.join)(stateRoot2, name);
-  if (!(0, import_node_fs18.existsSync)(teamDir3(sanitizedBase))) return sanitizedBase;
+  const stateRoot2 = (0, import_node_path26.join)(getOmcRoot(cwd2), "state", "team");
+  const teamDir3 = (name) => (0, import_node_path26.join)(stateRoot2, name);
+  if (!(0, import_node_fs21.existsSync)(teamDir3(sanitizedBase))) return sanitizedBase;
   for (let suffix = 2; suffix <= 99; suffix++) {
     const suffixText = `-${suffix}`;
     const candidate = `${sanitizedBase.slice(0, 30 - suffixText.length).replace(/-$/g, "")}${suffixText}`;
-    if (!(0, import_node_fs18.existsSync)(teamDir3(candidate))) return candidate;
+    if (!(0, import_node_fs21.existsSync)(teamDir3(candidate))) return candidate;
   }
   throw new Error(`Unable to allocate a fresh team name for ${sanitizedBase}; remove stale .omc/state/team entries or choose a more specific launch task.`);
 }
@@ -109900,9 +110277,9 @@ function sleep6(ms) {
 var import_promises29 = require("node:fs/promises");
 
 // src/goal-workflows/claude-goal-snapshot.ts
-var import_node_fs19 = require("node:fs");
+var import_node_fs22 = require("node:fs");
 var import_promises27 = require("node:fs/promises");
-var import_node_path23 = require("node:path");
+var import_node_path27 = require("node:path");
 var ClaudeGoalSnapshotError = class extends Error {
 };
 function safeObject(value) {
@@ -109955,8 +110332,8 @@ async function readClaudeGoalSnapshotInput(raw, cwd2 = process.cwd()) {
   try {
     return parseClaudeGoalSnapshot(JSON.parse(trimmed2));
   } catch {
-    const path27 = (0, import_node_path23.resolve)(cwd2, trimmed2);
-    if (!(0, import_node_fs19.existsSync)(path27)) {
+    const path27 = (0, import_node_path27.resolve)(cwd2, trimmed2);
+    if (!(0, import_node_fs22.existsSync)(path27)) {
       throw new ClaudeGoalSnapshotError(`Claude goal snapshot is neither valid JSON nor a readable path: ${trimmed2}`);
     }
     try {
@@ -109999,9 +110376,9 @@ function formatClaudeGoalReconciliation(reconciliation) {
 }
 
 // src/ultragoal/artifacts.ts
-var import_node_fs20 = require("node:fs");
+var import_node_fs23 = require("node:fs");
 var import_promises28 = require("node:fs/promises");
-var import_node_path24 = require("node:path");
+var import_node_path28 = require("node:path");
 init_worktree_paths();
 var ULTRAGOAL_DIR = ".omc/ultragoal";
 var ULTRAGOAL_BRIEF = "brief.md";
@@ -110015,20 +110392,20 @@ function iso(now = /* @__PURE__ */ new Date()) {
 }
 function ultragoalDir(cwd2, planId) {
   const omcRoot = getOmcRoot(cwd2);
-  if (planId) return (0, import_node_path24.join)(omcRoot, "ultragoal", ULTRAGOAL_PLANS_SUBDIR, planId);
-  return (0, import_node_path24.join)(omcRoot, "ultragoal");
+  if (planId) return (0, import_node_path28.join)(omcRoot, "ultragoal", ULTRAGOAL_PLANS_SUBDIR, planId);
+  return (0, import_node_path28.join)(omcRoot, "ultragoal");
 }
 function ultragoalBriefPath(cwd2, planId) {
-  return (0, import_node_path24.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_BRIEF);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_BRIEF);
 }
 function ultragoalGoalsPath(cwd2, planId) {
-  return (0, import_node_path24.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_GOALS);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_GOALS);
 }
 function ultragoalLedgerPath(cwd2, planId) {
-  return (0, import_node_path24.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_LEDGER);
+  return (0, import_node_path28.join)(ultragoalDir(cwd2, planId), ULTRAGOAL_LEDGER);
 }
 async function listUltragoalPlanIds(cwd2) {
-  const dir = (0, import_node_path24.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_PLANS_SUBDIR);
+  const dir = (0, import_node_path28.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_PLANS_SUBDIR);
   try {
     const entries = await (0, import_promises28.readdir)(dir, { withFileTypes: true });
     return entries.filter((entry2) => entry2.isDirectory()).filter((entry2) => /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(entry2.name)).map((entry2) => entry2.name).sort();
@@ -110043,7 +110420,7 @@ async function resolveActivePlanId(cwd2, explicitPlanId) {
     }
     return explicitPlanId;
   }
-  if ((0, import_node_fs20.existsSync)((0, import_node_path24.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_GOALS))) return void 0;
+  if ((0, import_node_fs23.existsSync)((0, import_node_path28.join)(getOmcRoot(cwd2), "ultragoal", ULTRAGOAL_GOALS))) return void 0;
   const plans = await listUltragoalPlanIds(cwd2);
   if (plans.length === 1) return plans[0];
   if (plans.length === 0) return void 0;
@@ -110058,7 +110435,7 @@ function makePlanId(brief, now) {
   return `${ts}-${slug}`;
 }
 function repoRelative(cwd2, path27) {
-  return (0, import_node_path24.relative)(cwd2, path27).split("\\").join("/");
+  return (0, import_node_path28.relative)(cwd2, path27).split("\\").join("/");
 }
 function cleanLine(line) {
   return line.replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, "").trim();
@@ -110199,7 +110576,7 @@ async function createUltragoalPlan(cwd2, options) {
   if (planId && !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(planId)) {
     throw new UltragoalError(`Invalid plan id: ${planId}. Allowed chars: a-z, 0-9, dot, underscore, hyphen.`);
   }
-  if (!options.force && (0, import_node_fs20.existsSync)(ultragoalGoalsPath(cwd2, planId))) {
+  if (!options.force && (0, import_node_fs23.existsSync)(ultragoalGoalsPath(cwd2, planId))) {
     const label = planId ? `${ULTRAGOAL_DIR}/${ULTRAGOAL_PLANS_SUBDIR}/${planId}/${ULTRAGOAL_GOALS}` : `${ULTRAGOAL_DIR}/${ULTRAGOAL_GOALS}`;
     throw new UltragoalError(`Refusing to overwrite existing ${label}; pass --force to recreate it.`);
   }
@@ -110880,8 +111257,8 @@ ${ULTRAGOAL_HELP}`);
 }
 
 // src/cli/commands/alias-retirement.ts
-var import_node_fs23 = require("node:fs");
-var import_node_path27 = require("node:path");
+var import_node_fs26 = require("node:fs");
+var import_node_path31 = require("node:path");
 
 // src/alias-retirement/registry.ts
 var ALIAS_RETIREMENT_SCHEMA_VERSION = 1;
@@ -110933,9 +111310,9 @@ function assertAliasRegistryIntegrity() {
 }
 
 // src/alias-retirement/verifier.ts
-var import_node_fs21 = require("node:fs");
-var import_node_path25 = require("node:path");
-var import_node_url = require("node:url");
+var import_node_fs24 = require("node:fs");
+var import_node_path29 = require("node:path");
+var import_node_url2 = require("node:url");
 function evaluateAlias(input) {
   const { record: record2, currentVersion, now, usageHistory, criticalIntegrations } = input;
   const temporal = isTemporalThresholdMet(
@@ -110991,14 +111368,14 @@ function evaluateAlias(input) {
 }
 function getPackageVersionFallback() {
   try {
-    let dir = (0, import_node_path25.dirname)((0, import_node_url.fileURLToPath)(importMetaUrl));
+    let dir = (0, import_node_path29.dirname)((0, import_node_url2.fileURLToPath)(importMetaUrl));
     for (let i = 0; i < 6; i++) {
       try {
-        const pkg = JSON.parse((0, import_node_fs21.readFileSync)((0, import_node_path25.join)(dir, "package.json"), "utf-8"));
+        const pkg = JSON.parse((0, import_node_fs24.readFileSync)((0, import_node_path29.join)(dir, "package.json"), "utf-8"));
         if (pkg.version) return pkg.version;
       } catch {
       }
-      const parent = (0, import_node_path25.dirname)(dir);
+      const parent = (0, import_node_path29.dirname)(dir);
       if (parent === dir) break;
       dir = parent;
     }
@@ -111036,11 +111413,11 @@ function summarizeReceipts(receipts) {
 }
 
 // src/alias-retirement/closure.ts
-var import_node_fs22 = require("node:fs");
-var import_node_path26 = require("node:path");
+var import_node_fs25 = require("node:fs");
+var import_node_path30 = require("node:path");
 function buildClosureReport(receipts, options = {}) {
   const cwd2 = options.cwd ?? process.cwd();
-  const exists = options.exists ?? ((p) => (0, import_node_fs22.existsSync)((0, import_node_path26.join)(cwd2, p)));
+  const exists = options.exists ?? ((p) => (0, import_node_fs25.existsSync)((0, import_node_path30.join)(cwd2, p)));
   const byAlias = new Map(receipts.map((r) => [r.alias.toLowerCase(), r]));
   const entries = receipts.flatMap(
     (r) => r.generatedArtifacts.map((p) => {
@@ -111133,7 +111510,7 @@ function readJsonMaybePath(raw) {
   const looksLikePath = raw.endsWith(".json") || raw.includes("/") || raw.includes("\\") || /^[\w.-]+\.json$/.test(raw);
   if (looksLikePath) {
     try {
-      const text = (0, import_node_fs23.readFileSync)(raw, "utf-8");
+      const text = (0, import_node_fs26.readFileSync)(raw, "utf-8");
       return JSON.parse(text);
     } catch {
     }
@@ -111233,8 +111610,8 @@ async function aliasRetirementCommand(args) {
     };
     const text = JSON.stringify(payload, null, 2);
     if (outPath) {
-      (0, import_node_fs23.mkdirSync)((0, import_node_path27.dirname)((0, import_node_path27.join)(process.cwd(), outPath)), { recursive: true });
-      (0, import_node_fs23.writeFileSync)((0, import_node_path27.join)(process.cwd(), outPath), `${text}
+      (0, import_node_fs26.mkdirSync)((0, import_node_path31.dirname)((0, import_node_path31.join)(process.cwd(), outPath)), { recursive: true });
+      (0, import_node_fs26.writeFileSync)((0, import_node_path31.join)(process.cwd(), outPath), `${text}
 `);
       console.log(`wrote ${outPath}`);
     }
@@ -113747,12 +114124,56 @@ Examples:
   console.log(source_default.gray("\n\u2501".repeat(50)));
   console.log(source_default.gray("\nTo check for updates, run: oh-my-claudecode update --check"));
 });
-program2.command("install").description("Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)").option("-f, --force", "Overwrite existing files").option("-q, --quiet", "Suppress output except for errors").option("--skip-claude-check", "Skip checking if Claude Code is installed").addHelpText("after", `
+program2.command("install").description("Install OMC agents/commands/hooks/MCP to a target host CLI (default: claude user-level)").option("-f, --force", "Overwrite existing files").option("-q, --quiet", "Suppress output except for errors").option("--skip-claude-check", "Skip checking if Claude Code is installed").option("--skip-hooks", "Skip hook installation").option("--force-hooks", "Force reinstall hooks even if unchanged").option("--no-plugin", "Install bundled skills from the current package").option("--plugin-dir-mode", "Treat OMC as launched via --plugin-dir").addOption(
+  new Option("-c, --client <client>", "Target host CLI (default: auto-detect or claude)").choices(["claude", "codebuddy", "zcode"])
+).option("--workspace [path]", "Install to <cwd>/.zcode (default) or <path>; only valid with --client zcode").addHelpText("after", `
 Examples:
-  $ omc install                  Install to config directory (default: ~/.claude/)
-  $ omc install --force          Reinstall, overwriting existing files
-  $ omc install --quiet          Silent install for scripts
-  $ CLAUDE_CONFIG_DIR=$HOME/.claude-isolated-workspace omc install  Isolated config directory`).action(async (options) => {
+  $ omc install                              Install to default Claude Code config (~/.claude)
+  $ omc install --client zcode               Install to ~/.zcode (ZCode user-level)
+  $ omc install --client zcode --workspace   Install to <cwd>/.zcode (ZCode workspace-level)
+  $ omc install --workspace=/abs/proj/.zcode Workspace install at custom path
+
+Client targeting:
+  --client claude|codebuddy|zcode is optional. Without it, the session is
+  auto-detected (CodeBuddy sessions install to ~/.codebuddy; ZCode sessions
+  install to ~/.zcode; everything else installs to ~/.claude).`).action(async (options) => {
+  const effectiveClient = options.client ?? detectClient();
+  const workspaceArg = options.workspace;
+  if (workspaceArg !== void 0 && effectiveClient !== "zcode") {
+    console.error(source_default.red(`--workspace currently only supports --client zcode (got --client ${effectiveClient})`));
+    process.exit(1);
+  }
+  if (effectiveClient === "zcode") {
+    if (options.pluginDirMode || options.plugin === false) {
+      console.warn(source_default.yellow("--plugin-dir-mode and --no-plugin are not applicable to zcode; ignoring"));
+    }
+    const scope = workspaceArg !== void 0 ? "workspace" : "user";
+    const workspacePathForResolve = workspaceArg === true ? (0, import_path155.join)(process.cwd(), ".zcode") : workspaceArg;
+    const { zcodeDir, agentsMcpJsonPath } = resolveZcodePaths(scope, workspacePathForResolve);
+    const workspacePathForSetup = scope === "workspace" ? (0, import_path155.dirname)(zcodeDir) : void 0;
+    const result2 = setupZcode({
+      scope,
+      zcodeDir,
+      agentsMcpJsonPath,
+      ...workspacePathForSetup ? { workspacePath: workspacePathForSetup } : {},
+      packageDir: getRuntimePackageRoot(),
+      hooksWanted: !options.skipHooks,
+      log: (message2) => {
+        if (!options.quiet) console.log(source_default.gray(message2));
+      }
+    });
+    if (!result2.success) {
+      console.error(source_default.red(`ZCode ${scope} install failed: ${result2.message}`));
+      result2.errors.forEach((err) => console.error(source_default.red(`  - ${err}`)));
+      process.exit(1);
+    }
+    if (!options.quiet) {
+      const targetLabel = scope === "workspace" ? zcodeDir : "~/.zcode";
+      console.log(source_default.green(`ZCode ${scope} install complete (${targetLabel})!`));
+      console.log(source_default.gray(`skills=${result2.deployed.skills} commands=${result2.deployed.commands} agents=${result2.deployed.agents} hooks=${result2.deployed.hooks ? "wired" : "skipped"}`));
+    }
+    return;
+  }
   if (!options.quiet) {
     console.log(source_default.blue("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
     console.log(source_default.blue("\u2551         Oh-My-ClaudeCode Installer                        \u2551"));
@@ -113772,10 +114193,30 @@ Examples:
     }
     return;
   }
+  const useLocalBundledSkills = options.plugin === false;
+  let pluginDirMode = !!options.pluginDirMode;
+  if (!pluginDirMode && process.env[OMC_PLUGIN_ROOT_ENV]) {
+    pluginDirMode = true;
+    if (!options.quiet) {
+      console.log(source_default.gray(`Detected ${OMC_PLUGIN_ROOT_ENV} \u2014 entering dev plugin-dir mode`));
+    }
+  }
+  if (pluginDirMode && useLocalBundledSkills) {
+    if (!options.quiet) {
+      console.log(source_default.yellow("Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence"));
+    }
+    pluginDirMode = false;
+  }
+  if (pluginDirMode && !options.quiet) {
+    console.log(source_default.gray("Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)"));
+  }
   const result = install({
-    force: options.force,
+    force: !!options.force,
     verbose: !options.quiet,
-    skipClaudeCheck: options.skipClaudeCheck
+    skipClaudeCheck: options.skipClaudeCheck,
+    forceHooks: !!options.forceHooks,
+    noPlugin: useLocalBundledSkills,
+    pluginDirMode
   });
   if (result.success) {
     if (!options.quiet) {
@@ -113993,8 +114434,8 @@ Examples:
   process.exit(exitCode);
 });
 program2.command("setup").description("Run OMC setup to sync all components (hooks, agents, skills)").option("-f, --force", "Force reinstall even if already up to date").option("-q, --quiet", "Suppress output except for errors").option("--no-plugin", "Install bundled skills from the current package instead of relying on plugin-provided skills").option("--plugin-dir-mode", "Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)").option("--skip-hooks", "Skip hook installation").option("--force-hooks", "Force reinstall hooks even if unchanged").addOption(
-  new Option("--client <client>", "Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy; default: auto-detect the current session)").choices(["claude", "codebuddy"])
-).addHelpText("after", `
+  new Option("--client <client>", "Target host CLI for user-level state (claude: ~/.claude, codebuddy: ~/.codebuddy, zcode: ~/.zcode standalone; default: auto-detect the current session)").choices(["claude", "codebuddy", "zcode"])
+).option("--workspace [path]", "Forwarded to install: workspace install at <cwd>/.zcode or <path> (zcode only)").addHelpText("after", `
 Examples:
   $ omc setup                     Sync all OMC components
   $ omc setup --force             Force reinstall everything
@@ -114004,81 +114445,25 @@ Examples:
   $ omc setup --skip-hooks        Install without hooks
   $ omc setup --force-hooks       Force reinstall hooks
   $ omc setup --client codebuddy  Install user-level state into ~/.codebuddy
+  $ omc setup --client zcode      Standalone install into ~/.zcode (skills/commands/agents/hooks/MCP)
 
 Client targeting:
-  --client claude|codebuddy is optional \u2014 without it the session is
+  --client claude|codebuddy|zcode is optional \u2014 without it the session is
   auto-detected (CodeBuddy sessions install into ~/.codebuddy with
-  CODEBUDDY.md as the memory file; everything else keeps ~/.claude).`).action(async (options) => {
-  if (!options.quiet) {
-    console.log(source_default.blue("Oh-My-ClaudeCode Setup\n"));
+  CODEBUDDY.md as the memory file, ZCode sessions standalone-install into
+  ~/.zcode; everything else keeps ~/.claude).`).action(async (options) => {
+  const args = ["install"];
+  if (options.client) args.push("--client", options.client);
+  if (options.workspace !== void 0) {
+    args.push(options.workspace === true ? "--workspace" : `--workspace=${options.workspace}`);
   }
-  if (!options.quiet) {
-    console.log(source_default.gray("Syncing OMC components..."));
-  }
-  const useLocalBundledSkills = options.plugin === false;
-  let pluginDirMode = !!options.pluginDirMode;
-  if (!pluginDirMode && process.env[OMC_PLUGIN_ROOT_ENV]) {
-    pluginDirMode = true;
-    if (!options.quiet) {
-      console.log(source_default.gray(`Detected ${OMC_PLUGIN_ROOT_ENV} \u2014 entering dev plugin-dir mode`));
-    }
-  }
-  if (pluginDirMode && useLocalBundledSkills) {
-    if (!options.quiet) {
-      console.log(source_default.yellow("Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence"));
-    }
-    pluginDirMode = false;
-  }
-  if (pluginDirMode && !options.quiet) {
-    console.log(source_default.gray("Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)"));
-  }
-  const result = install({
-    force: !!options.force,
-    verbose: !options.quiet,
-    skipClaudeCheck: true,
-    forceHooks: !!options.forceHooks,
-    noPlugin: useLocalBundledSkills,
-    pluginDirMode
-  });
-  if (!result.success) {
-    console.error(source_default.red(`Setup failed: ${result.message}`));
-    if (result.errors.length > 0) {
-      result.errors.forEach((err) => console.error(source_default.red(`  - ${err}`)));
-    }
-    process.exit(1);
-  }
-  if (!options.quiet) {
-    console.log("");
-    console.log(source_default.green("Setup complete!"));
-    console.log("");
-    if (result.installedAgents.length > 0) {
-      console.log(source_default.gray(`  Agents:   ${result.installedAgents.length} synced`));
-    }
-    if (result.installedCommands.length > 0) {
-      console.log(source_default.gray(`  Commands: ${result.installedCommands.length} synced`));
-    }
-    if (result.installedSkills.length > 0) {
-      console.log(source_default.gray(`  Skills:   ${result.installedSkills.length} synced`));
-    }
-    if (result.hooksConfigured) {
-      console.log(source_default.gray("  Hooks:    configured"));
-    }
-    if (result.hookConflicts.length > 0) {
-      console.log("");
-      console.log(source_default.yellow("  Hook conflicts detected:"));
-      result.hookConflicts.forEach((c) => {
-        console.log(source_default.yellow(`    - ${c.eventType}: ${c.existingCommand}`));
-      });
-    }
-    const installed = getInstalledVersion();
-    const reportedVersion = installed?.version ?? version2;
-    console.log("");
-    console.log(source_default.gray(`Version: ${reportedVersion}`));
-    if (reportedVersion !== version2) {
-      console.log(source_default.gray(`CLI package version: ${version2}`));
-    }
-    console.log(source_default.gray("Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup."));
-  }
+  if (options.force) args.push("--force");
+  if (options.quiet) args.push("--quiet");
+  if (options.skipHooks) args.push("--skip-hooks");
+  if (options.forceHooks) args.push("--force-hooks");
+  if (options.plugin === false) args.push("--no-plugin");
+  if (options.pluginDirMode) args.push("--plugin-dir-mode");
+  await program2.parseAsync([process.argv[0], process.argv[1], ...args]);
 });
 program2.command("postinstall", { hidden: true }).description("Run post-install setup (called automatically by npm)").action(async () => {
   const result = install({

@@ -225,6 +225,25 @@ npm run verify:codebuddy
 
 Runs the full end-to-end chain — plugin validation, marketplace add/install, setup, a headless smoke session, isolation assertions against `~/.claude`, and cleanup.
 
+## ZCode (standalone + workspace)
+
+ZCode is supported via two install modes, both standalone (no marketplace plugin needed):
+
+```bash
+omc install --client zcode               # User-level: writes to ~/.zcode
+omc install --client zcode --workspace   # Workspace-level: writes to <cwd>/.zcode
+```
+
+This deploys `skills/`, `commands/`, `agents/`, and `hooks/`, wires the 6 supported hook events into `cli/config.json`, writes `cli/settings.json`, registers the MCP bridge in `.agents/mcp.json`, syncs the OMC block in `AGENTS.md`, and disables the `oh-my-claudecode` marketplace plugin if present. Re-run after upgrades.
+
+Workspace mode mirrors the full user-level layout under `<cwd>/.zcode/` — namely `skills/`, `commands/`, `agents/`, `hooks/`, `AGENTS.md`, `cli/config.json`, `cli/settings.json`, and `.agents/mcp.json` — and additionally writes the version stamp `<cwd>/.omc-version.json` at the workspace root (NOT inside `.zcode/`). User-level and workspace-level coexist independently; ZCode itself decides precedence.
+
+You can also pass a custom path: `omc install --client zcode --workspace=/abs/proj/.zcode` treats `/abs/proj/.zcode` as the ZCode root directly (no `.zcode` suffix appended). The version stamp `.omc-version.json` then lands at `dirname(/abs/proj/.zcode) = /abs/proj/.omc-version.json` — i.e. one level above the path you supplied. If you instead pass `--workspace=/abs/proj` (no `.zcode` suffix), that path becomes the ZCode root itself, and the version stamp lands at `/abs/.omc-version.json` (one level above). **Recommended: always include the `.zcode` suffix** so the layout matches the default `<cwd>/.zcode/` shape.
+
+Subagent lifecycle and precompact hooks are not available on ZCode (host does not expose those events). If you configure native MCP servers in `cli/config.json`, note that `.agents/mcp.json` is skipped by ZCode.
+
+`omc setup --client zcode [--workspace]` remains as a thin alias of `omc install --client zcode [--workspace]` for backward compatibility.
+
 ## Team Mode (Recommended)
 
 Starting in **v4.1.7**, **Team** is the canonical orchestration surface in OMC. The legacy `swarm` keyword/skill has been removed; use `team` directly.
